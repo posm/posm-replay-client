@@ -1,0 +1,22 @@
+.navbar {
+    display: flex;
+    background-color: var(--color-foreground);
+    padding: 0 calc(var(--spacing-large) - var(--spacing-medium));
+
+    .app-name {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        justify-content: center;
+        padding: var(--spacing-medium);
+        font-size: var(--font-size-large);
+        font-weight: var(--font-weight-bold);
+    }
+
+    .menu {
+        display: flex;
+        flex-grow: 1;
+        justify-content: center;
+        overflow: auto;
+    }
+}

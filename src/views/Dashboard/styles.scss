@@ -1,0 +1,10 @@
+.dashboard {
+    .message {
+        display: flex;
+        flex-direction: column;
+
+        .icon {
+            font-size: var(--width-icon-extra-large);
+        }
+    }
+}

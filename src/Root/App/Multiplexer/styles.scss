@@ -1,0 +1,101 @@
+:global {
+    .portal-child-shown {
+        overflow: hidden;
+
+        #posm-replay-tool-root {
+            filter: brightness(50%);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .focus-trap-wrapper {
+            .focus-trap {
+                .modal:not([data-last-modal="true"]) {
+                    filter: brightness(50%);
+                    pointer-events: none;
+                }
+            }
+        }
+    }
+}
+
+body {
+    font-size: var(--font-size-medium);
+
+    a {
+        outline: none;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5 {
+        margin: 0;
+        color: var(--color-primary);
+        font-family: var(--font-family-heading);
+        font-weight: var(--font-weight-heading);
+    }
+
+    ::-webkit-scrollbar-track {
+        background-color: var(--color-background-scrollbar);
+    }
+
+    ::-webkit-scrollbar {
+        background-color: var(--color-background-scrollbar);
+        width: var(--width-scrollbar);
+        height: var(--width-scrollbar);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: var(--color-foreground-scrollbar);
+    }
+
+    .multiplexer {
+        display: flex;
+        flex-direction: column;
+        background-color: var(--color-background);
+        height: 100vh;
+
+        .navbar {
+            flex-shrink: 0;
+            border-bottom: var(--width-separator-thin) solid var(--color-separator);
+        }
+
+        .loading-animation-container {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .router {
+            display: flex;
+            position: relative;
+            flex-direction: column;
+            flex-grow: 1;
+
+            .content {
+                flex-grow: 1;
+            }
+
+            .page-error {
+                display: flex;
+                align-items: center;
+                flex-direction: column;
+                flex-grow: 1;
+                justify-content: center;
+
+                .message {
+                    padding: var(--spacing-small);
+                    text-align: center;
+                }
+
+                .reload-button {
+                    margin: var(--spacing-small);
+                    font-size: var(--font-size-large);
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="Description" content="Replay changes to OSM">
+
+    <title>
+        POSM replay tool
+    </title>
+
+    <style>
+        :root {
+            --color-background: #f0f0f0;
+            --color-text: rgba(0, 0, 0, .7);
+            --font-family-sans-serif: sans-serif;
+            --width-root-preload: 100vw;
+            --height-root-preload: 100vh;
+            --font-size-preload: max(2vw, 2vh);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            background-color: var(--color-background);
+            padding: 0;
+            color: var(--color-text);
+            font-family: var(--font-family-sans-serif);
+        }
+
+        #root-preload {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: var(--width-root-preload);
+            height: var(--height-root-preload);
+            text-align: center;
+            font-size: var(--font-size-preload);
+        }
+    </style>
+
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  </head>
+  <body>
+    <noscript>
+        POSM replay tool needs Javascript.
+    </noscript>
+    <div id="posm-replay-tool-root">
+        <div id="root-preload">
+            Initializing POSM replay tool ...
+        </div>
+    </div>
+
+    <!-- External resources  -->
+    <link href="https://fonts.googleapis.com/css?family=Noto+Sans+TC:300,400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.css" />
+
+      <script>
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker
+              .register('/service-worker.js')
+              .then((registration) => {
+                console.info('SW registered: ', registration);
+                registration.onupdatefound = () => {
+                  const installingWorker = registration.installing;
+                  installingWorker.onstatechange = () => {
+                    switch (installingWorker.state) {
+                      case 'installed':
+                        if (navigator.serviceWorker.controller) {
+                          // New update is available
+                          console.info('SW: New update is available!');
+                          const shouldUpdate = window.confirm('New update is available. Do you want to update now?');
+                          if (shouldUpdate) {
+                            window.location.reload(true);
+                          }
+                        } else {
+                          // No new update
+                          console.info('SW: No new updates!');
+                        }
+                        break;
+                      default:
+                        break;
+                    }
+                  };
+                };
+              })
+              .catch((registrationError) => {
+                console.error('SW registration failed: ', registrationError);
+              });
+          });
+        }
+      </script>
+  </body>
+</html>

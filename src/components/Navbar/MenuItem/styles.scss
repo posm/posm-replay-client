@@ -1,0 +1,29 @@
+.menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: var(--width-separator-medium) solid transparent;
+    background-color: var(--color-foreground);
+    cursor: pointer;
+    padding: 0 var(--spacing-medium);
+    text-decoration: none;
+
+    .menu-title {
+        text-align: center;
+        font-size: var(--font-size-large);
+        font-weight: var(--font-weight-bold);
+    }
+
+    &:hover {
+        color: var(--color-accent);
+    }
+
+    &.active {
+        border-bottom-color: var(--color-accent);
+        color: var(--color-accent);
+    }
+
+    &.disabled {
+        color: var(--color-text-disabled);
+    }
+}
