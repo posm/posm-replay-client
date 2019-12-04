@@ -12,4 +12,29 @@
     .right {
         padding: var(--spacing-small) var(--spacing-small);
     }
+
+    &.not-initiated {
+        .left {
+            color: var(--color-primary);
+        }
+    }
+
+    &.completed {
+        .left {
+            color: var(--color-success);
+        }
+    }
+
+    &.failed {
+        .left {
+            color: var(--color-danger);
+        }
+    }
+
+    &.pending {
+        .right {
+            color: var(--color-primary);
+            font-weight: var(--font-weight-bold);
+        }
+    }
 }
