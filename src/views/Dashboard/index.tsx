@@ -1,8 +1,13 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
-import Message from '#rscv/Message';
-import Icon from '#rscg/Icon';
+import Map from '#re-map';
+import MapContainer from '#re-map/MapContainer';
+import MapBounds from '#re-map/MapBounds';
+// import MapSource from '#re-map/MapSource';
+// import MapLayer from '#re-map/MapSource/MapLayer';
+// import Message from '#rscv/Message';
+// import Icon from '#rscg/Icon';
 
 /*
 import Redux from 'redux';
@@ -34,6 +39,21 @@ import {
  */
 
 import styles from './styles.scss';
+
+const nepalCenter: [number, number] = [
+    84.1240, 28.3949,
+];
+
+const nepalBounds: [number, number, number, number] = [
+    80.05858661752784, 26.347836996368667,
+    88.20166918432409, 30.44702867091792,
+];
+
+const mapOptions = {
+    zoomLevel: 3,
+    center: nepalCenter,
+    bounds: nepalBounds,
+};
 
 interface State {
 }
@@ -121,6 +141,30 @@ const requests: { [key: string]: ClientAttributes<ReduxProps, Params> } = {
 };
 */
 
+const mapStyle: mapboxgl.MapboxOptions['style'] = {
+    version: 8,
+    name: 'Base Layer',
+    sources: {
+        mm: {
+            type: 'raster',
+            url: process.env.REACT_APP_OSM_LAYER_URL,
+            tileSize: 256,
+        },
+    },
+    layers: [
+        {
+            id: 'background',
+            type: 'background',
+            paint: { 'background-color': 'rgb(239, 239, 239)' },
+        },
+        {
+            id: 'mm_layer',
+            type: 'raster',
+            source: 'mm',
+        },
+    ],
+};
+
 // eslint-disable-next-line react/prefer-stateless-function
 class Dashboard extends React.PureComponent<Props, State> {
     public render() {
@@ -128,6 +172,21 @@ class Dashboard extends React.PureComponent<Props, State> {
 
         return (
             <div className={_cs(className, styles.dashboard)}>
+                <Map
+                    mapStyle={mapStyle}
+                    mapOptions={mapOptions}
+                    scaleControlShown
+                    navControlShown
+                >
+                    <MapBounds
+                        bounds={mapOptions.bounds}
+                        padding={50}
+                    />
+                    <MapContainer
+                        className={styles.map}
+                    />
+                </Map>
+                {/*
                 <Message className={styles.message}>
                     <Icon
                         className={styles.icon}
@@ -135,6 +194,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     />
                     Dashboard goes here
                 </Message>
+                */}
             </div>
         );
     }

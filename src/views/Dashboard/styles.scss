@@ -1,4 +1,8 @@
 .dashboard {
+    .map {
+        height: 80vh;
+    }
+    /*
     .message {
         display: flex;
         flex-direction: column;
@@ -7,4 +11,5 @@
             font-size: var(--width-icon-extra-large);
         }
     }
+    */
 }
