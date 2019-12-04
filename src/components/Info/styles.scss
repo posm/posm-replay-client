@@ -1,0 +1,17 @@
+.info {
+    display: flex;
+    align-items: center;
+    border: var(--width-separator-thin) solid var(--color-primary);
+    padding: 0 calc(var(--spacing-medium) - var(--spacing-small));
+
+    .icon {
+        flex-shrink: 0;
+        padding: 0 var(--spacing-small);
+        font-size: var(--font-size-extra-large);
+    }
+
+    .message {
+        flex-grow: 1;
+        padding: var(--spacing-small);
+    }
+}

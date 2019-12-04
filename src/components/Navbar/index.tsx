@@ -2,6 +2,7 @@ import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
 import ListView from '#rscv/List/ListView';
+import POSMIcon from '#resources/posm.png';
 
 import { routeSettings, hasNavbar, NavbarRoute } from '#constants';
 
@@ -37,10 +38,17 @@ class Navbar extends React.PureComponent<Props> {
         return (
             <nav className={className}>
                 <div
-                    className={styles.appName}
+                    className={styles.brand}
                     title={process.env.REACT_APP_VERSION}
                 >
-                    POSM replay tool
+                    <img
+                        src={POSMIcon}
+                        alt="POSM"
+                        className={styles.icon}
+                    />
+                    <div className={styles.label}>
+                        replay tool
+                    </div>
                 </div>
                 <ListView
                     data={pages}

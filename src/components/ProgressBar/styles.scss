@@ -1,0 +1,11 @@
+.progress-bar {
+    display: flex;
+    border: var(--width-separator-thin) solid var(--color-separator);
+    border-radius: var(--radius-border-progress-bar);
+    height: var(--height-progress-bar);
+
+    .progress {
+        border-radius: var(--radius-border-progress-bar);
+        background-color: var(--color-accent);
+    }
+}

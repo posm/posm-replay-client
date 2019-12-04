@@ -3,7 +3,6 @@
     align-items: center;
     justify-content: center;
     border-bottom: var(--width-separator-medium) solid transparent;
-    background-color: var(--color-foreground);
     cursor: pointer;
     padding: 0 var(--spacing-medium);
     text-decoration: none;
@@ -14,13 +13,13 @@
         font-weight: var(--font-weight-bold);
     }
 
-    &:hover {
-        color: var(--color-accent);
+    &.active {
+        border-bottom-color: var(--color-text-on-navbar);
+        color: var(--color-text-on-navbar);
     }
 
-    &.active {
-        border-bottom-color: var(--color-accent);
-        color: var(--color-accent);
+    &:hover {
+        color: var(--color-text-on-navbar-hover);
     }
 
     &.disabled {

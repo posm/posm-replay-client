@@ -1,7 +1,95 @@
 .dashboard {
-    .map {
-        height: 80vh;
+    display: flex;
+
+    .sidebar {
+        border-right: var(--width-separator-thin) solid var(--color-separator);
+        width: var(--width-sidebar);
+        min-width: var(--width-sidebar-min);
+        max-width: var(--width-sidebar-max);
+
+        >.heading {
+            padding: var(--spacing-medium) var(--spacing-large);
+        }
+
+        .details {
+            padding: calc(var(--spacing-medium) - var(--spacing-extra-small)) calc(var(--spacing-large) - var(--spacing-medium));
+        }
+
+        >.actions {
+            padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-small));
+
+            .start-button {
+                margin: var(--spacing-small);
+            }
+        }
+
+        .info {
+            margin: calc(var(--spacing-medium) - var(--spacing-small)) var(--spacing-large);
+            color: var(--color-text-label);
+        }
+
+        .progress {
+            padding: calc(var(--spacing-large) - var(--spacing-medium));
+
+            .heading {
+                padding: var(--spacing-medium) var(--spacing-large);
+            }
+
+            .progress-bar {
+                margin: 0 var(--spacing-large);
+            }   
+
+            .task-list {
+                padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-medium));
+            }
+        }
+
+        .conflicts {
+            padding: calc(var(--spacing-large) - var(--spacing-medium));
+
+            .heading {
+                padding: var(--spacing-medium) var(--spacing-large);
+            }
+
+            >.actions {
+                padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-small));
+
+                .resolve-conflict-button {
+                    margin: var(--spacing-small);
+                }
+            }
+
+            .progress-bar {
+                margin: 0 var(--spacing-large);
+            }   
+
+            .conflict-status {
+                display: flex;
+                padding: var(--spacing-medium) calc(var(--spacing-large) - var(--spacing-extra-small));
+
+                .resolved-conflicts {
+                    padding: 0 var(--spacing-extra-small);
+                }
+
+                .separator {
+                    padding: 0 var(--spacing-extra-small);
+                }
+
+                .total-conflicts {
+                    padding: 0 var(--spacing-extra-small);
+                }
+
+                .post-label {
+                    padding: 0 var(--spacing-extra-small);
+                }
+            }
+        }
     }
+
+    .map {
+        flex-grow: 1;
+    }
+
     /*
     .message {
         display: flex;
