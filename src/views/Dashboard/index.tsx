@@ -4,10 +4,16 @@ import { _cs } from '@togglecorp/fujs';
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
+import Button from '#rsu/../v2/Action/Button';
 // import MapSource from '#re-map/MapSource';
 // import MapLayer from '#re-map/MapSource/MapLayer';
 // import Message from '#rscv/Message';
 // import Icon from '#rscg/Icon';
+
+import TextOutput from '#components/TextOutput';
+import Info from '#components/Info';
+import ProgressBar from '#components/ProgressBar';
+import TaskItem from '#components/TaskItem';
 
 /*
 import Redux from 'redux';
@@ -49,10 +55,18 @@ const nepalBounds: [number, number, number, number] = [
     88.20166918432409, 30.44702867091792,
 ];
 
+const lalitpurBounds: [number, number, number, number] = [
+    85.31066555023207,
+    27.67117097577173,
+    85.32710212707534,
+    27.682648488328013,
+];
+
+
 const mapOptions = {
     zoomLevel: 3,
     center: nepalCenter,
-    bounds: nepalBounds,
+    bounds: lalitpurBounds,
 };
 
 interface State {
@@ -167,11 +181,123 @@ const mapStyle: mapboxgl.MapboxOptions['style'] = {
 
 // eslint-disable-next-line react/prefer-stateless-function
 class Dashboard extends React.PureComponent<Props, State> {
+    private handleStartButtonClick = () => {
+        console.warn('starting...');
+    }
+
     public render() {
-        const { className } = this.props;
+        const {
+            className,
+        } = this.props;
+
+        const data = {
+            locationName: 'Lalitpur',
+            dateExtracted: '2019-12-02',
+            localChanges: '12',
+            resolvedConflicts: 0,
+            totalConflicts: 35,
+        };
 
         return (
             <div className={_cs(className, styles.dashboard)}>
+                <div className={styles.sidebar}>
+                    <h2 className={styles.heading}>
+                        { data.locationName }
+                    </h2>
+                    <div className={styles.details}>
+                        <TextOutput
+                            label="Date extracted"
+                            value={data.dateExtracted}
+                        />
+                        <TextOutput
+                            label="Local changesets"
+                            value={data.localChanges}
+                        />
+                    </div>
+                    <div className={styles.actions}>
+                        <Button
+                            buttonType="button-primary"
+                            className={styles.startButton}
+                            onClick={this.handleStartButtonClick}
+                        >
+                            Start
+                        </Button>
+                    </div>
+                    <Info
+                        className={styles.info}
+                        message="The replay tool has not been started!"
+                    />
+
+                    <div className={styles.progress}>
+                        <h3 className={styles.heading}>
+                            Progress
+                        </h3>
+                        <ProgressBar
+                            className={styles.progressBar}
+                            progress={50}
+                        />
+                        <div className={styles.taskList}>
+                            <TaskItem
+                                className={styles.taksItem}
+                                status="completed"
+                                label="Gathering changesets"
+                            />
+                            <TaskItem
+                                className={styles.taksItem}
+                                status="pending"
+                                label="Extracting upstream AOI"
+                            />
+                            <TaskItem
+                                className={styles.taksItem}
+                                status="failed"
+                                label="Extracting local AOI"
+                            />
+                            <TaskItem
+                                className={styles.taksItem}
+                                status="not-initiated"
+                                label="Filtering referenced elements"
+                            />
+                            <TaskItem
+                                className={styles.taksItem}
+                                status="not-initiated"
+                                label="Identifying conflicts"
+                            />
+                        </div>
+                    </div>
+
+                    <div className={styles.conflicts}>
+                        <h3 className={styles.heading}>
+                            Conflicts
+                        </h3>
+                        <ProgressBar
+                            className={styles.progressBar}
+                            progress={10}
+                        />
+                        <div className={styles.conflictStatus}>
+                            <div className={styles.resolvedConflicts}>
+                                {data.resolvedConflicts}
+                            </div>
+                            <div className={styles.separator}>
+                                of
+                            </div>
+                            <div className={styles.totalConflicts}>
+                                {data.totalConflicts}
+                            </div>
+                            <div className={styles.postLabel}>
+                                conflicts resolved
+                            </div>
+                        </div>
+                        <div className={styles.actions}>
+                            <Button
+                                buttonType="button-primary"
+                                className={styles.resolveConflictButton}
+                                onClick={this.handleResolveConflictButtonClick}
+                            >
+                                Resolve conflicts
+                            </Button>
+                        </div>
+                    </div>
+                </div>
                 <Map
                     mapStyle={mapStyle}
                     mapOptions={mapOptions}
