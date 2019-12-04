@@ -9,6 +9,7 @@ import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
 
+import ConflictStatus from '#components/ConflictStatus';
 import TextOutput from '#components/TextOutput';
 import Info from '#components/Info';
 import ProgressBar from '#components/ProgressBar';
@@ -366,20 +367,11 @@ class Dashboard extends React.PureComponent<Props, State> {
                                 className={styles.progressBar}
                                 progress={conflictProgress}
                             />
-                            <div className={styles.conflictStatus}>
-                                <div className={styles.resolvedConflicts}>
-                                    {conflict.resolvedCount}
-                                </div>
-                                <div className={styles.separator}>
-                                    of
-                                </div>
-                                <div className={styles.totalConflicts}>
-                                    {conflict.totalCount}
-                                </div>
-                                <div className={styles.postLabel}>
-                                    conflicts resolved
-                                </div>
-                            </div>
+                            <ConflictStatus
+                                className={styles.conflictStatus}
+                                total={conflict.totalCount}
+                                resolved={conflict.resolvedCount}
+                            />
                             <div className={styles.actions}>
                                 <Button
                                     buttonType="button-primary"

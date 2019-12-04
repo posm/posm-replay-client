@@ -1,41 +1,19 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
-import Message from '#rscv/Message';
-import Icon from '#rscg/Icon';
+import ListView from '#rsu/../v2/View/ListView';
 
-/*
-import Redux from 'redux';
-import { connect } from 'react-redux';
-import { Obj } from '@togglecorp/fujs';
+import ProgressBar from '#components/ProgressBar';
+import ConflictStatus from '#components/ConflictStatus';
+import { ConflictElement } from '#constants/types';
 
-import { AppState } from '#store/types';
-import * as PageTypes from '#store/atom/page/types';
-import {
-    createConnectedRequestCoordinator,
-    createRequestClient,
-    NewProps,
-    ClientAttributes,
-    methods,
-} from '#request';
-*/
-
-/*
-import {
-    setAlertListActionDP,
-    setEventListAction,
-} from '#actionCreators';
-import {
-    alertListSelectorDP,
-    eventListSelector,
-    hazardTypesSelector,
-    filtersValuesSelectorDP,
-} from '#selectors';
- */
+import ConflictDetail from './ConflictDetail';
+import ConflictListItem from './ConflictListItem';
 
 import styles from './styles.scss';
 
 interface State {
+    activeConflictId: string;
 }
 interface Params {
     // triggerAlertRequest: (timeout: number) => void;
@@ -44,96 +22,82 @@ interface OwnProps {
     className?: string;
 }
 type Props = OwnProps;
-/*
-interface PropsFromState {
-    alertList: PageTypes.Alert[];
-    eventList: PageTypes.Event[];
-    hazardTypes: Obj<PageTypes.HazardType>;
-    filters: PageTypes.FiltersWithRegion['faramValues'];
-}
-interface PropsFromDispatch {
-    setEventList: typeof setEventListAction;
-    setAlertList: typeof setAlertListActionDP;
-}
-type ReduxProps = OwnProps & PropsFromState & PropsFromDispatch;
-type Props = NewProps<ReduxProps, Params>;
-*/
 
-/*
-const mapStateToProps = (state: AppState): PropsFromState => ({
-    alertList: alertListSelectorDP(state),
-    eventList: eventListSelector(state),
-    hazardTypes: hazardTypesSelector(state),
-    filters: filtersValuesSelectorDP(state),
-});
+const conflictList: ConflictElement[] = [
+    { id: '1', title: 'Building in Jawalakhel' },
+    { id: '2', title: 'Bridge near Kupondole' },
+    { id: '3', title: 'Hospital in Bhaisepati' },
+];
 
-const mapDispatchToProps = (dispatch: Redux.Dispatch): PropsFromDispatch => ({
-    setAlertList: params => dispatch(setAlertListActionDP(params)),
-    setEventList: params => dispatch(setEventListAction(params)),
-});
-
-const requests: { [key: string]: ClientAttributes<ReduxProps, Params> } = {
-    alertsRequest: {
-        url: '/alert/',
-        method: methods.GET,
-        // We have to transform dateRange to created_on__lt and created_on__gt
-        query: ({ props: { filters } }) => ({
-            ...transformDateRangeFilterParam(filters, 'created_on'),
-            expand: ['event'],
-            ordering: '-created_on',
-        }),
-        onSuccess: ({ response, props: { setAlertList }, params }) => {
-            interface Response { results: PageTypes.Alert[] }
-            const { results: alertList = [] } = response as Response;
-            setAlertList({ alertList });
-            if (params && params.triggerAlertRequest) {
-                params.triggerAlertRequest(60 * 1000);
-            }
-        },
-        onFailure: ({ params }) => {
-            if (params && params.triggerAlertRequest) {
-                params.triggerAlertRequest(60 * 1000);
-            }
-        },
-        onFatal: ({ params }) => {
-            if (params && params.triggerAlertRequest) {
-                params.triggerAlertRequest(60 * 1000);
-            }
-        },
-        onMount: true,
-        onPropsChanged: {
-            filters: ({
-                props: { filters: { hazard, dateRange, region } },
-                prevProps: { filters: {
-                    hazard: prevHazard,
-                    dateRange: prevDateRange,
-                    region: prevRegion,
-                } },
-            }) => (
-                hazard !== prevHazard || dateRange !== prevDateRange || region !== prevRegion
-            ),
-        },
-        extras: {
-            schemaName: 'alertResponse',
-        },
-    },
-};
-*/
+const conflictKeySelector = (d: ConflictElement) => d.id;
 
 // eslint-disable-next-line react/prefer-stateless-function
 class ConflictResolution extends React.PureComponent<Props, State> {
+    public constructor(props: Props) {
+        super(props);
+
+        this.state = {
+            activeConflictId: '1',
+        };
+    }
+
+    private getConflictListItemRendererParams = (_: string, conflict: ConflictElement) => ({
+        conflictId: conflict.id,
+        title: conflict.title,
+        onClick: this.handleConflictListItemClick,
+        isActive: this.state.activeConflictId === conflict.id,
+    });
+
+    private handleConflictListItemClick = (conflictId: string) => {
+        this.setState({ activeConflictId: conflictId });
+    }
+
+    // TODO: memoize
+    private getActiveConflict = (cl: ConflictElement[], activeConflictId: string) => {
+        const activeConflict = cl.find(c => c.id === activeConflictId);
+
+        return activeConflict;
+    }
+
     public render() {
         const { className } = this.props;
+        const { activeConflictId } = this.state;
+
+        const data = {
+            locationName: 'Lalitpur',
+        };
 
         return (
             <div className={_cs(className, styles.conflictResolution)}>
-                <Message className={styles.message}>
-                    <Icon
-                        className={styles.icon}
-                        name="conflictResolution"
+                <div className={styles.sidebar}>
+                    <header className={styles.header}>
+                        <h2 className={styles.heading}>
+                            { data.locationName }
+                        </h2>
+                        <div className={styles.details}>
+                            <ProgressBar
+                                className={styles.progressBar}
+                                progress={30}
+                            />
+                            <ConflictStatus
+                                className={styles.conflictStatus}
+                                total={10}
+                                resolved={3}
+                            />
+                        </div>
+                    </header>
+                    <ListView
+                        className={styles.conflictList}
+                        data={conflictList}
+                        renderer={ConflictListItem}
+                        rendererParams={this.getConflictListItemRendererParams}
+                        keySelector={conflictKeySelector}
                     />
-                    Conflict Resolution goes here
-                </Message>
+                </div>
+                <ConflictDetail
+                    data={this.getActiveConflict(conflictList, activeConflictId)}
+                    className={styles.conflictDetail}
+                />
             </div>
         );
     }

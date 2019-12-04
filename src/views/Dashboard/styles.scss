@@ -87,24 +87,7 @@
             }
 
             .conflict-status {
-                display: flex;
                 padding: var(--spacing-medium) calc(var(--spacing-large) - var(--spacing-extra-small));
-
-                .resolved-conflicts {
-                    padding: 0 var(--spacing-extra-small);
-                }
-
-                .separator {
-                    padding: 0 var(--spacing-extra-small);
-                }
-
-                .total-conflicts {
-                    padding: 0 var(--spacing-extra-small);
-                }
-
-                .post-label {
-                    padding: 0 var(--spacing-extra-small);
-                }
             }
         }
 
