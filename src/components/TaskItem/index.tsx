@@ -6,7 +6,8 @@ import Icon from '#rscg/Icon';
 
 import styles from './styles.scss';
 
-type Status = 'not-initiated' | 'pending' | 'completed' | 'failed';
+export type Status = 'not-initiated' | 'pending' | 'completed' | 'failed';
+
 interface Props {
     className?: string;
     status: Status;
@@ -40,7 +41,11 @@ class TaskItem extends React.PureComponent<Props> {
                     )}
                 </div>
                 <div className={styles.right}>
-                    { label }
+                    { status === 'pending' ? (
+                        <b>{label}</b>
+                    ) : (
+                        label
+                    )}
                 </div>
             </div>
         );

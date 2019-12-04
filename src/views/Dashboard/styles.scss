@@ -7,8 +7,22 @@
         min-width: var(--width-sidebar-min);
         max-width: var(--width-sidebar-max);
 
-        >.heading {
-            padding: var(--spacing-medium) var(--spacing-large);
+        >.header {
+            padding: calc(var(--spacing-medium) - var(--spacing-small));
+
+            >.heading {
+                padding: var(--spacing-small) var(--spacing-large);
+            }
+
+            >.description {
+                display: -webkit-box;
+                margin: var(--spacing-small) var(--spacing-large);
+                overflow: hidden;
+                text-align: justify;
+                -webkit-line-clamp: 4;
+                -webkit-box-orient: vertical;
+                color: var(--color-text-label);
+            }
         }
 
         .details {
@@ -37,10 +51,18 @@
 
             .progress-bar {
                 margin: 0 var(--spacing-large);
-            }   
+            }
 
             .task-list {
                 padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-medium));
+            }
+
+            >.actions {
+                padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-small));
+
+                .retry-button {
+                    margin: var(--spacing-small);
+                }
             }
         }
 
@@ -61,7 +83,7 @@
 
             .progress-bar {
                 margin: 0 var(--spacing-large);
-            }   
+            }
 
             .conflict-status {
                 display: flex;
@@ -81,6 +103,18 @@
 
                 .post-label {
                     padding: 0 var(--spacing-extra-small);
+                }
+            }
+        }
+
+        .resolution {
+            padding: calc(var(--spacing-large) - var(--spacing-medium));
+
+            >.actions {
+                padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-small));
+
+                .push-to-upstream-button {
+                    margin: var(--spacing-small);
                 }
             }
         }
