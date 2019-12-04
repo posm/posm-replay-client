@@ -3,6 +3,7 @@
 
     .sidebar {
         border-right: var(--width-separator-thin) solid var(--color-separator);
+        background-color: var(--color-foreground);
         width: var(--width-sidebar);
         min-width: var(--width-sidebar-min);
         max-width: var(--width-sidebar-max);
@@ -19,9 +20,9 @@
                 margin: var(--spacing-small) var(--spacing-large);
                 overflow: hidden;
                 text-align: justify;
+                color: var(--color-text-label);
                 -webkit-line-clamp: 4;
                 -webkit-box-orient: vertical;
-                color: var(--color-text-label);
             }
         }
 
@@ -50,7 +51,7 @@
             }
 
             .progress-bar {
-                margin: 0 var(--spacing-large);
+                margin: var(--spacing-small) var(--spacing-large);
             }
 
             .task-list {

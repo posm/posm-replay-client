@@ -330,14 +330,6 @@ class Dashboard extends React.PureComponent<Props, State> {
                             <h3 className={styles.heading}>
                                 Progress
                             </h3>
-                            <ProgressBar
-                                className={styles.progressBar}
-                                progress={
-                                    analyzing
-                                        ? this.getPosmStateProgress(posmStates, posmStatus)
-                                        : 100
-                                }
-                            />
                             <ListView
                                 className={styles.taskList}
                                 data={this.getVisiblePosmStates(posmStates)}
@@ -345,6 +337,12 @@ class Dashboard extends React.PureComponent<Props, State> {
                                 keySelector={this.taskItemKeySelector}
                                 rendererParams={this.taskItemRendererParams}
                             />
+                            {analyzing && (
+                                <ProgressBar
+                                    className={styles.progressBar}
+                                    progress={this.getPosmStateProgress(posmStates, posmStatus)}
+                                />
+                            )}
                             {(analyzing && posmStatus.hasErrored) && (
                                 <div className={styles.actions}>
                                     <Button

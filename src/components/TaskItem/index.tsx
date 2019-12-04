@@ -23,6 +23,15 @@ const iconNames: {
     pending: 'checkmarkCircleEmpty',
 };
 
+const statusStyles: {
+    [key in Status]: string;
+} = {
+    'not-initiated': styles.notInitiated,
+    completed: styles.completed,
+    failed: styles.failed,
+    pending: styles.pending,
+};
+
 class TaskItem extends React.PureComponent<Props> {
     public render() {
         const {
@@ -32,7 +41,7 @@ class TaskItem extends React.PureComponent<Props> {
         } = this.props;
 
         return (
-            <div className={_cs(styles.taskItem, className)}>
+            <div className={_cs(styles.taskItem, className, statusStyles[status])}>
                 <div className={styles.left}>
                     { status === 'pending' ? (
                         <Spinner className={styles.spinner} />
@@ -41,11 +50,7 @@ class TaskItem extends React.PureComponent<Props> {
                     )}
                 </div>
                 <div className={styles.right}>
-                    { status === 'pending' ? (
-                        <b>{label}</b>
-                    ) : (
-                        label
-                    )}
+                    { label }
                 </div>
             </div>
         );
