@@ -8,13 +8,33 @@ import Button from '#rsu/../v2/Action/Button';
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
+import MapSource from '#re-map/MapSource';
+import MapLayer from '#re-map/MapSource/MapLayer';
 
 import TextOutput from '#components/TextOutput';
 import Info from '#components/Info';
 import ProgressBar from '#components/ProgressBar';
 import TaskItem, { Status } from '#components/TaskItem';
 
+import conflicts from './conflicts.json';
+
 import styles from './styles.scss';
+
+const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
+    type: 'geojson',
+};
+const layerOptions: mapboxgl.Layer = {
+    id: 'not-required',
+    type: 'circle',
+    paint: {
+        'circle-color': 'red',
+        'circle-radius': 10,
+        'circle-opacity': 0.3,
+        'circle-stroke-color': ['case', ['has', 'color'], ['get', 'color'], 'red'],
+        'circle-stroke-opacity': 0.9,
+        'circle-stroke-width': 2,
+    },
+};
 
 enum PosmStateEnum {
     'not_triggered',
@@ -78,7 +98,7 @@ const mapStyle: mapboxgl.MapboxOptions['style'] = {
             type: 'raster',
             url: process.env.REACT_APP_OSM_LAYER_URL,
             tileSize: 256,
-            // tileSize: 256,
+            // tiles: [ 'http://192.168.31.127:8082/tiles/mm/{z}/{x}/{y}.png' ],
         },
     },
     layers: [
@@ -266,6 +286,10 @@ class Dashboard extends React.PureComponent<Props, State> {
         const conflictProgress = 100 * (conflict.resolvedCount / conflict.totalCount);
         const resolveDisabled = conflict.totalCount !== conflict.resolvedCount;
 
+        const myConflicts = conflictedStep
+            ? conflicts as GeoJSON.FeatureCollection<GeoJSON.Geometry>
+            : undefined;
+
         return (
             <div className={_cs(className, styles.dashboard)}>
                 <div className={styles.sidebar}>
@@ -425,6 +449,18 @@ class Dashboard extends React.PureComponent<Props, State> {
                     <MapContainer
                         className={styles.map}
                     />
+                    {myConflicts && (
+                        <MapSource
+                            sourceKey="conflict"
+                            geoJSON={myConflicts}
+                            sourceOptions={sourceOptions}
+                        >
+                            <MapLayer
+                                layerKey="outlined-circle"
+                                layerOptions={layerOptions}
+                            />
+                        </MapSource>
+                    )}
                 </Map>
             </div>
         );
