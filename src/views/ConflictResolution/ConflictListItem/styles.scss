@@ -12,6 +12,20 @@
     color: inherit;
     font-family: inherit;
 
+    .icon {
+        margin-right: var(--spacing-small);
+
+        &.error {
+            color: var(--color-danger);
+        }
+        &.success {
+            color: var(--color-success);
+        }
+        &.pending {
+            color: var(--color-accent);
+        }
+    }
+
     &:hover {
         background-color: var(--color-background-hover);
     }

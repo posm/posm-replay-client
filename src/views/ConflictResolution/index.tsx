@@ -24,12 +24,17 @@ interface OwnProps {
 type Props = OwnProps;
 
 const conflictList: ConflictElement[] = [
-    { id: '1', title: 'Building in Jawalakhel' },
-    { id: '2', title: 'Bridge near Kupondole' },
-    { id: '3', title: 'Hospital in Bhaisepati' },
+    { id: '6', title: 'School at Sundarijal', resolutionStatus: 'resolved', type: 'node' },
+    { id: '2', title: 'Bridge near Kupondole', resolutionStatus: 'resolved', type: 'node' },
+    { id: '3', title: 'Hospital in Bhaisepati', resolutionStatus: 'partially-resolved', type: 'node' },
+    { id: '4', title: 'House in Jwagal', resolutionStatus: 'conflicted', type: 'node' },
+    { id: '5', title: 'Road near Chakupat', resolutionStatus: 'conflicted', type: 'way' },
+    { id: '1', title: 'Building in Jawalakhel', resolutionStatus: 'conflicted', type: 'node' },
 ];
 
 const conflictKeySelector = (d: ConflictElement) => d.id;
+
+// TODO: show type
 
 // eslint-disable-next-line react/prefer-stateless-function
 class ConflictResolution extends React.PureComponent<Props, State> {
@@ -37,7 +42,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         super(props);
 
         this.state = {
-            activeConflictId: '1',
+            activeConflictId: '6',
         };
     }
 
@@ -46,6 +51,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         title: conflict.title,
         onClick: this.handleConflictListItemClick,
         isActive: this.state.activeConflictId === conflict.id,
+        resolutionStatus: conflict.resolutionStatus,
     });
 
     private handleConflictListItemClick = (conflictId: string) => {
@@ -67,6 +73,10 @@ class ConflictResolution extends React.PureComponent<Props, State> {
             locationName: 'Lalitpur',
         };
 
+        const total = conflictList.length;
+        const resolved = conflictList.filter(c => c.resolutionStatus === 'resolved').length;
+        const partiallyResolved = conflictList.filter(c => c.resolutionStatus === 'partially-resolved').length;
+
         return (
             <div className={_cs(className, styles.conflictResolution)}>
                 <div className={styles.sidebar}>
@@ -77,12 +87,13 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                         <div className={styles.details}>
                             <ProgressBar
                                 className={styles.progressBar}
-                                progress={30}
+                                progress={100 * (resolved / total)}
                             />
                             <ConflictStatus
                                 className={styles.conflictStatus}
-                                total={10}
-                                resolved={3}
+                                total={total}
+                                partiallyResolved={partiallyResolved}
+                                resolved={resolved}
                             />
                         </div>
                     </header>
@@ -104,12 +115,3 @@ class ConflictResolution extends React.PureComponent<Props, State> {
 }
 
 export default ConflictResolution;
-/*
-export default connect(mapStateToProps, mapDispatchToProps)(
-    createConnectedRequestCoordinator<ReduxProps>()(
-        createRequestClient(requests)(
-            ConflictResolution,
-        ),
-    ),
-);
-*/

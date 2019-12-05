@@ -1,6 +1,7 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 import memoize from 'memoize-one';
+import { navigate } from '@reach/router';
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
@@ -14,6 +15,8 @@ import TextOutput from '#components/TextOutput';
 import Info from '#components/Info';
 import ProgressBar from '#components/ProgressBar';
 import TaskItem, { Status } from '#components/TaskItem';
+
+import pathNames from '#constants/pathNames';
 
 import styles from './styles.scss';
 
@@ -97,6 +100,8 @@ const mapStyle: mapboxgl.MapboxOptions['style'] = {
 };
 
 
+const speed = 0.1;
+
 interface State {
     posmStatus: PosmStatus;
     posmStates: PosmState[];
@@ -139,7 +144,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     posmStatus: { state: PosmStateEnum.extracting_upstream_aoi },
                 });
             },
-            1000,
+            1000 * speed,
         );
         setTimeout(
             () => {
@@ -147,7 +152,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     posmStatus: { state: PosmStateEnum.extracting_local_aoi },
                 });
             },
-            2000,
+            2000 * speed,
         );
         setTimeout(
             () => {
@@ -155,7 +160,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     posmStatus: { state: PosmStateEnum.filtering_referenced_osm_elements },
                 });
             },
-            4000,
+            4000 * speed,
         );
         setTimeout(
             () => {
@@ -166,7 +171,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     },
                 });
             },
-            5000,
+            5000 * speed,
         );
     }
 
@@ -180,14 +185,20 @@ class Dashboard extends React.PureComponent<Props, State> {
                     posmStatus: { state: PosmStateEnum.conflicts },
                 });
             },
-            3000,
+            3000 * speed,
         );
     }
 
+    /*
     private handleResolveConflictButtonClick = () => {
         this.setState({
             posmStatus: { state: PosmStateEnum.resolved, isCurrentStateComplete: true },
         });
+    }
+    */
+
+    private handleResolveConflictButtonClick = () => {
+        navigate(pathNames.conflictResolution);
     }
 
     private handlePushToUpstreamButton = () => {
@@ -379,7 +390,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                                     onClick={this.handleResolveConflictButtonClick}
                                     // disabled={resolveDisabled}
                                 >
-                                    Resolve conflicts
+                                    Show Conflicts
                                 </Button>
                             </div>
                             {resolveDisabled && (

@@ -5,11 +5,18 @@ import styles from './styles.scss';
 
 interface Props {
     className?: string;
-    resolved: number;
+    resolved?: number;
     total: number;
+    partiallyResolved?: number;
 }
 
 class ConflictStatus extends React.PureComponent<Props> {
+    public static defaultProps = {
+        resolved: 0,
+        partiallyResolved: 0,
+        total: 0,
+    };
+
     public render() {
         const {
             className,

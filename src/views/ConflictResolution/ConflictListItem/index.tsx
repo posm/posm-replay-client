@@ -1,6 +1,10 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
+import Icon from '#rscg/Icon';
+
+import { ResolutionStatus } from '#constants/types';
+
 import styles from './styles.scss';
 
 interface Props {
@@ -9,7 +13,23 @@ interface Props {
     conflictId: string;
     onClick: (conflictId: string) => void;
     isActive: boolean;
+    resolutionStatus: ResolutionStatus;
 }
+
+const iconNames: {
+    [key in ResolutionStatus]: string;
+} = {
+    conflicted: 'error',
+    resolved: 'checkmarkCircle',
+    'partially-resolved': 'checkmarkCircleEmpty',
+};
+const iconClassNames: {
+    [key in ResolutionStatus]: string;
+} = {
+    conflicted: styles.error,
+    resolved: styles.success,
+    'partially-resolved': styles.pending,
+};
 
 class ConflictListItem extends React.PureComponent<Props> {
     private handleClick = () => {
@@ -26,6 +46,7 @@ class ConflictListItem extends React.PureComponent<Props> {
             className,
             title,
             isActive,
+            resolutionStatus,
         } = this.props;
 
         return (
@@ -34,6 +55,10 @@ class ConflictListItem extends React.PureComponent<Props> {
                 onClick={this.handleClick}
                 type="button"
             >
+                <Icon
+                    className={_cs(styles.icon, iconClassNames[resolutionStatus])}
+                    name={iconNames[resolutionStatus]}
+                />
                 { title }
             </button>
         );
