@@ -100,7 +100,7 @@ const mapStyle: mapboxgl.MapboxOptions['style'] = {
 };
 
 
-const speed = 0.1;
+const speed = 0.6;
 
 interface State {
     posmStatus: PosmStatus;

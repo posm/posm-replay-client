@@ -1,15 +1,15 @@
 export type ResolutionStatus = 'conflicted' | 'resolved' | 'partially-resolved';
-export type ElementType = 'node' | 'way' | 'relation';
+export type ElementType = 'point' | 'line' | 'area';
 export type Bounds = [number, number, number, number];
 
 interface Meta {
     id: number;
-    user: string;
-    uid: number;
-    timestamp: string;
-    visible?: boolean;
     version: number;
-    changeset: number;
+    user?: string;
+    uid?: number;
+    timestamp?: string;
+    visible?: boolean;
+    changeset?: number;
 };
 
 interface Tag {
@@ -18,10 +18,10 @@ interface Tag {
 };
 
 export type Content = {
-    type: ElementType;
     meta: Meta;
     tags: Tag[];
     bounds: Bounds;
+    geoJSON?: GeoJSON.Feature<GeoJSON.Geometry> | GeoJSON.FeatureCollection<GeoJSON.Geometry>;
 }
 
 export interface ConflictElement {
@@ -29,6 +29,8 @@ export interface ConflictElement {
     title: string;
     resolutionStatus: ResolutionStatus;
     type: ElementType; // IDK about this
+
+    original: Content,
     theirs?: Content,
     ours?: Content,
 }
