@@ -10,16 +10,15 @@ interface Meta {
     timestamp?: string;
     visible?: boolean;
     changeset?: number;
-};
+}
 
-interface Tag {
-    key: string;
-    value: string;
-};
+interface Tags {
+    [key: string]: string;
+}
 
-export type Content = {
+export interface Content {
     meta: Meta;
-    tags: Tag[];
+    tags: Tags;
     bounds: Bounds;
     geoJSON?: GeoJSON.Feature<GeoJSON.Geometry> | GeoJSON.FeatureCollection<GeoJSON.Geometry>;
 }
@@ -30,9 +29,9 @@ export interface ConflictElement {
     resolutionStatus: ResolutionStatus;
     type: ElementType; // IDK about this
 
-    original: Content,
-    theirs?: Content,
-    ours?: Content,
+    original: Content;
+    theirs?: Content;
+    ours?: Content;
 }
 
 // For nodes:

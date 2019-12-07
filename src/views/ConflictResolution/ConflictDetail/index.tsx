@@ -102,6 +102,8 @@ class ConflictDetail extends React.PureComponent<Props, State> {
             original: {
                 bounds,
                 geoJSON,
+                tags,
+                meta,
             },
         } = data;
 
@@ -174,6 +176,15 @@ class ConflictDetail extends React.PureComponent<Props, State> {
                 <h3>
                     Tags
                 </h3>
+                <pre>
+                    {JSON.stringify(tags, null, 2)}
+                </pre>
+                <h3>
+                    Meta
+                </h3>
+                <pre>
+                    {JSON.stringify(meta, null, 2)}
+                </pre>
             </div>
         );
     }

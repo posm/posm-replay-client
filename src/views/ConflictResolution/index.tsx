@@ -24,19 +24,64 @@ interface OwnProps {
 }
 type Props = OwnProps;
 
+const TagForCollege = {
+    'addr:street': 'Chakupat',
+    building: 'college',
+    // eslint-disable-next-line camelcase, @typescript-eslint/camelcase
+    int_name: 'Nepal Bhasa Central Department',
+    name: 'Nepal Bhasa Central Department',
+    'name:ne': 'चैन लाकौल स्मृति भवन',
+};
+
+const TagForCollege2 = {
+    building: 'college',
+};
+
+const TagForCompany = {
+    'addr:city': 'Lalitpur',
+    'addr:street': 'Mitra Marg',
+    building: 'yes',
+    name: 'Max Media Pvt ltd',
+    office: 'company',
+    // eslint-disable-next-line camelcase, @typescript-eslint/camelcase
+    opening_hours: '10:00-18:00',
+    smoking: 'outside',
+    source: 'NextView',
+};
+
+const TagForSchool = {
+    amenity: 'school',
+    // eslint-disable-next-line camelcase, @typescript-eslint/camelcase
+    building_count: '3',
+    'isced:level': 'secondary',
+    name: 'Eden Garden Secondary School',
+    'operator:type': 'private',
+    'personnel:count': '40',
+    source: 'OpenDRI survey',
+    'student:count': '600',
+};
+
+const TagForEqArea = {
+    'damage:event': 'nepal_earthquake_2015',
+    'idp:camp_site': 'spontaneous_camp',
+    'idp:source_20150427': 'Pleiades, CNES, Airbus DS',
+    'idp:status_20150427': 'new',
+    leisure: 'park',
+    name: 'Imukhel Baal Udyaan(childresn\'s park)',
+};
+
 const conflictList: ConflictElement[] = [
     {
         resolutionStatus: 'resolved',
         id: '6',
-        title: 'School at Sundarijal',
+        title: 'Building around Police Chowk',
         type: 'area',
         original: {
             meta: {
                 id: 1,
                 version: 1,
             },
-            tags: [
-            ],
+            tags: TagForEqArea,
             bounds: [85.312410593, 27.6733618869, 85.3133171797, 27.6739842374],
             geoJSON: {
                 type: 'FeatureCollection',
@@ -79,15 +124,14 @@ const conflictList: ConflictElement[] = [
     {
         resolutionStatus: 'conflicted',
         id: '2',
-        title: 'Bridge near Kupondole',
+        title: 'Residential road near Kupondole',
         type: 'line',
         original: {
             meta: {
                 id: 1,
                 version: 1,
             },
-            tags: [
-            ],
+            tags: TagForSchool,
             bounds: [85.3149935603, 27.6731611662, 85.3162327409, 27.67385953],
             geoJSON: {
                 type: 'FeatureCollection',
@@ -125,15 +169,14 @@ const conflictList: ConflictElement[] = [
     {
         resolutionStatus: 'partially-resolved',
         id: '3',
-        title: 'Hospital in Bhaisepati',
+        title: 'College around Jawalakhel',
         type: 'point',
         original: {
             meta: {
                 id: 1,
                 version: 1,
             },
-            tags: [
-            ],
+            tags: TagForCollege,
             bounds: [85.3139528632, 27.6737027549, 85.3151008487, 27.6743393556],
             geoJSON: {
                 type: 'Feature',
