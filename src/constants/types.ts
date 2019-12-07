@@ -12,7 +12,7 @@ interface Meta {
     changeset?: number;
 }
 
-interface Tags {
+export interface Tags {
     [key: string]: string;
 }
 

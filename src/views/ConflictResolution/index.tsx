@@ -1,30 +1,24 @@
 import React from 'react';
-import { _cs } from '@togglecorp/fujs';
+import {
+    _cs,
+    intersection,
+    union,
+    difference,
+} from '@togglecorp/fujs';
 
 import ListView from '#rsu/../v2/View/ListView';
 import Message from '#rsu/../v2/View/Message';
 
 import ProgressBar from '#components/ProgressBar';
 import ConflictStatus from '#components/ConflictStatus';
-import { ConflictElement } from '#constants/types';
+import { ConflictElement, Tags } from '#constants/types';
 
 import ConflictDetail from './ConflictDetail';
 import ConflictListItem from './ConflictListItem';
 
 import styles from './styles.scss';
 
-interface State {
-    activeConflictId?: string;
-}
-interface Params {
-    // triggerAlertRequest: (timeout: number) => void;
-}
-interface OwnProps {
-    className?: string;
-}
-type Props = OwnProps;
-
-const TagForCollege = {
+const TagForCollege: Tags = {
     'addr:street': 'Chakupat',
     building: 'college',
     // eslint-disable-next-line camelcase, @typescript-eslint/camelcase
@@ -33,11 +27,12 @@ const TagForCollege = {
     'name:ne': 'चैन लाकौल स्मृति भवन',
 };
 
-const TagForCollege2 = {
+const TagForCollege2: Tags = {
     building: 'college',
+    name: 'Nepal Bhasa Central Departments',
 };
 
-const TagForCompany = {
+const TagForCompany: Tags = {
     'addr:city': 'Lalitpur',
     'addr:street': 'Mitra Marg',
     building: 'yes',
@@ -49,7 +44,7 @@ const TagForCompany = {
     source: 'NextView',
 };
 
-const TagForSchool = {
+const TagForSchool: Tags = {
     amenity: 'school',
     // eslint-disable-next-line camelcase, @typescript-eslint/camelcase
     building_count: '3',
@@ -61,7 +56,7 @@ const TagForSchool = {
     'student:count': '600',
 };
 
-const TagForEqArea = {
+const TagForEqArea: Tags = {
     'damage:event': 'nepal_earthquake_2015',
     'idp:camp_site': 'spontaneous_camp',
     'idp:source_20150427': 'Pleiades, CNES, Airbus DS',
@@ -69,6 +64,48 @@ const TagForEqArea = {
     leisure: 'park',
     name: 'Imukhel Baal Udyaan(childresn\'s park)',
 };
+
+function identifyChanges(prev: Tags | undefined, next: Tags | undefined) {
+    if (!prev || !next) {
+        return {
+            all: [],
+            altered: new Set<string>(),
+        };
+    }
+
+    const prevKeys = new Set(Object.keys(prev));
+    const nextKeys = new Set(Object.keys(next));
+
+    const all = union(prevKeys, nextKeys);
+    const deleted = difference(prevKeys, nextKeys);
+    const added = difference(nextKeys, prevKeys);
+
+    const common = intersection(prevKeys, nextKeys);
+    const modified = new Set([...common].filter(key => prev[key] !== next[key]));
+
+    // altered: added, deleted or value modified
+    const altered = union(modified, union(deleted, added));
+
+    return {
+        all: [...all],
+        altered,
+    };
+}
+
+function getIterableTags(state: Tags, all: string[], altered: Set<string>) {
+    const mapping = all.map((key) => {
+        const item = state[key];
+        const isAltered = altered.has(key);
+        return { key, value: item, isAltered };
+    });
+    return mapping;
+}
+
+const { all, altered } = identifyChanges(TagForCollege, TagForCollege2);
+const iterTagsOne = getIterableTags(TagForCollege, all, altered);
+console.warn(iterTagsOne);
+const iterTagsTwo = getIterableTags(TagForCollege2, all, altered);
+console.warn(iterTagsTwo);
 
 const conflictList: ConflictElement[] = [
     {
@@ -192,6 +229,17 @@ const conflictList: ConflictElement[] = [
         },
     },
 ];
+
+interface State {
+    activeConflictId?: string;
+}
+interface Params {
+    // triggerAlertRequest: (timeout: number) => void;
+}
+interface OwnProps {
+    className?: string;
+}
+type Props = OwnProps;
 
 const conflictKeySelector = (d: ConflictElement) => d.id;
 
