@@ -57,6 +57,16 @@ const areaOutlineLayerOptions: mapboxgl.Layer = {
         'line-width': 3,
     },
 };
+const linePointOptions: mapboxgl.Layer = {
+    id: 'not-required',
+    type: 'circle',
+    paint: {
+        'circle-color': 'red',
+        'circle-radius': 3,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': 'white',
+    },
+};
 
 const lineLayerOptions: mapboxgl.Layer = {
     id: 'not-required',
@@ -146,6 +156,10 @@ class ConflictDetail extends React.PureComponent<Props, State> {
                                 layerKey="outline"
                                 layerOptions={areaOutlineLayerOptions}
                             />
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={linePointOptions}
+                            />
                         </MapSource>
                     )}
                     {geoJSON && type === 'line' && (
@@ -157,6 +171,10 @@ class ConflictDetail extends React.PureComponent<Props, State> {
                             <MapLayer
                                 layerKey="outline"
                                 layerOptions={lineLayerOptions}
+                            />
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={linePointOptions}
                             />
                         </MapSource>
                     )}
