@@ -7,7 +7,7 @@ import MapBounds from '#re-map/MapBounds';
 import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
 
-import { ConflictElement } from '#constants/types';
+import { Content, ElementType } from '#constants/types';
 
 import styles from './styles.scss';
 
@@ -94,7 +94,9 @@ const pointLayerOptions: mapboxgl.Layer = {
 
 interface Props {
     className?: string;
-    data: ConflictElement;
+    data?: Content;
+    type: ElementType;
+    title: string;
 }
 
 interface State {
@@ -104,30 +106,36 @@ class ConflictDetail extends React.PureComponent<Props, State> {
     public render() {
         const {
             className,
+            type,
             data,
+            title,
         } = this.props;
 
+        if (!data) {
+            return (
+                <div className={_cs(className, styles.conflictDetail)}>
+                    <h2>
+                        {title}
+                    </h2>
+                </div>
+            );
+        }
+
         const {
-            type,
-            original: {
-                bounds,
-                geoJSON,
-                tags,
-                meta,
-            },
+            bounds,
+            geoJSON,
+            tags,
+            meta,
         } = data;
 
         const mapOptions = {
-            bounds: data.original.bounds,
+            bounds,
         };
 
         return (
             <div className={_cs(className, styles.conflictDetail)}>
-                <h1>
-                    { data.title }
-                </h1>
                 <h2>
-                    Original
+                    {title}
                 </h2>
                 <Map
                     mapStyle={mapStyle}

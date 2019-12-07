@@ -1,6 +1,10 @@
 .conflictDetail {
+    flex-basis: 33%;
+    flex-shrink: 0;
+    padding: var(--spacing-large);
+
     .map {
-        width: 400px;
-        height: 400px;
+        flex-grow: 1;
+        height: 300px;
     }
 }

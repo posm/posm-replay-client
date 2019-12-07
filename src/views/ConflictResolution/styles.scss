@@ -37,8 +37,25 @@
         }
     }
 
-    .conflict-detail {
+    .content {
+        display: flex;
+        flex-direction: column;
         flex-grow: 1;
         overflow: auto;
+
+        .title {
+            padding: var(--spacing-large);
+        }
+
+        .main-content {
+            display: flex;
+            flex-grow: 1;
+            overflow: auto;
+
+            .conflict-detail {
+                flex-grow: 1;
+                overflow: auto;
+            }
+        }
     }
 }

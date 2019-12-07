@@ -3,7 +3,7 @@ import { _cs } from '@togglecorp/fujs';
 
 import Icon from '#rscg/Icon';
 
-import { ResolutionStatus } from '#constants/types';
+import { ResolutionStatus, ElementType } from '#constants/types';
 
 import styles from './styles.scss';
 
@@ -14,6 +14,7 @@ interface Props {
     onClick: (conflictId: string) => void;
     isActive: boolean;
     resolutionStatus: ResolutionStatus;
+    type: ElementType;
 }
 
 const iconNames: {
@@ -47,6 +48,7 @@ class ConflictListItem extends React.PureComponent<Props> {
             title,
             isActive,
             resolutionStatus,
+            type,
         } = this.props;
 
         return (
@@ -59,7 +61,7 @@ class ConflictListItem extends React.PureComponent<Props> {
                     className={_cs(styles.icon, iconClassNames[resolutionStatus])}
                     name={iconNames[resolutionStatus]}
                 />
-                { title }
+                {`${title} (${type})`}
             </button>
         );
     }

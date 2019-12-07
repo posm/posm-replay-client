@@ -13,7 +13,7 @@ interface Meta {
 }
 
 export interface Tags {
-    [key: string]: string;
+    [key: string]: string | undefined;
 }
 
 export interface Content {
