@@ -1,9 +1,9 @@
 import React from 'react';
 import {
     _cs,
-    intersection,
     union,
-    difference,
+    // intersection,
+    // difference,
 } from '@togglecorp/fujs';
 
 import ListView from '#rsu/../v2/View/ListView';
@@ -13,58 +13,44 @@ import ProgressBar from '#components/ProgressBar';
 import ConflictStatus from '#components/ConflictStatus';
 import { ConflictElement, Tags } from '#constants/types';
 
-import ConflictDetail from './ConflictDetail';
+// import ConflictDetail from './ConflictDetail';
 import ConflictListItem from './ConflictListItem';
 import { conflictList } from './dummy';
 
 import styles from './styles.scss';
 
-function identifyChanges(prev: Tags | undefined, next: Tags | undefined) {
-    if (!prev || !next) {
+function getTagsComparision(original: Tags, prev: Tags | undefined, next: Tags | undefined) {
+    const originalKeys = new Set(Object.keys(original));
+    const prevKeys = new Set(prev ? Object.keys(prev) : []);
+    const nextKeys = new Set(next ? Object.keys(next) : []);
+
+    const allKeys = union(originalKeys, union(prevKeys, nextKeys));
+
+    return [...allKeys].map((key) => {
+        const originalValue = original[key];
+        const oursValue = prev ? prev[key] : undefined;
+        const theirsValue = next ? next[key] : undefined;
+
+        const oursChanged = originalValue !== oursValue;
+        const theirsChanged = originalValue !== oursValue;
+        const conflicted = oursValue !== theirsValue;
         return {
-            all: [],
-            altered: new Set<string>(),
+            title: key,
+            original: originalValue,
+
+            ours: oursValue,
+            oursChanged,
+
+            theirs: theirsValue,
+            theirsChanged,
+
+            conflicted,
         };
-    }
-
-    const prevKeys = new Set(Object.keys(prev));
-    const nextKeys = new Set(Object.keys(next));
-
-    const all = union(prevKeys, nextKeys);
-    const deleted = difference(prevKeys, nextKeys);
-    const added = difference(nextKeys, prevKeys);
-
-    const common = intersection(prevKeys, nextKeys);
-    const modified = new Set([...common].filter(key => prev[key] !== next[key]));
-
-    // altered: added, deleted or value modified
-    const altered = union(modified, union(deleted, added));
-
-    return {
-        all: [...all],
-        altered,
-    };
-}
-
-function getIterableTags(state: Tags, all: string[], altered: Set<string>) {
-    const mapping = all.map((key) => {
-        const item = state[key];
-        const isAltered = altered.has(key);
-        return { key, value: item, isAltered };
     });
-    return mapping;
 }
-
-// const { all, altered } = identifyChanges(TagForCollege, TagForCollege2);
-// const iterTagsOne = getIterableTags(TagForCollege, all, altered);
-// console.warn(iterTagsOne);
-// const iterTagsTwo = getIterableTags(TagForCollege2, all, altered);
-// console.warn(iterTagsTwo);
 
 interface State {
     activeConflictId?: string;
-}
-interface Params {
 }
 interface OwnProps {
     className?: string;
@@ -150,26 +136,72 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                         <h1 className={styles.title}>
                             { activeConflict.title }
                         </h1>
-                        <div className={styles.mainContent}>
-                            <ConflictDetail
-                                className={styles.conflictDetail}
-                                data={activeConflict.original}
-                                type={activeConflict.type}
-                                title="Original"
-                            />
-                            <ConflictDetail
-                                className={styles.conflictDetail}
-                                data={activeConflict.ours}
-                                type={activeConflict.type}
-                                title="Ours"
-                            />
-                            <ConflictDetail
-                                className={styles.conflictDetail}
-                                data={activeConflict.theirs}
-                                type={activeConflict.type}
-                                title="Theirs"
-                            />
+                        <div className={styles.subHeader}>
+                            <div> Original </div>
+                            <div> Ours </div>
+                            <div> Theirs </div>
                         </div>
+                        <div className={styles.map}>
+                            <div> Map 1 </div>
+                            <div> Map 2 </div>
+                            <div> Map 3 </div>
+                        </div>
+                        {
+                            getTagsComparision(
+                                activeConflict.original.tags,
+                                activeConflict.ours ? activeConflict.ours.tags : undefined,
+                                activeConflict.theirs ? activeConflict.theirs.tags : undefined,
+                            ).map(({
+                                title,
+
+                                original,
+                                ours,
+                                theirs,
+
+                                oursChanged,
+                                theirsChanged,
+                                conflicted,
+                            }) => (
+                                <div className={styles.tag}>
+                                    <div className={styles.originalTag}>
+                                        {original && (
+                                            <div className={styles.input}>
+                                                <div className={styles.title}>
+                                                    {title}
+                                                </div>
+                                                <div className={styles.value}>
+                                                    {original}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className={styles.oursTag}>
+                                        {ours && (
+                                            <div className={styles.input}>
+                                                <div className={styles.title}>
+                                                    {title}
+                                                </div>
+                                                <div className={styles.value}>
+                                                    {ours}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {theirs && (
+                                        <div className={styles.theirsTag}>
+                                            <div className={styles.input}>
+                                                <div className={styles.title}>
+                                                    {title}
+                                                </div>
+                                                <div className={styles.value}>
+                                                    {theirs}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        }
                     </div>
                 ) : (
                     <Message>
