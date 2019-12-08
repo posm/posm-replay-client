@@ -1,0 +1,43 @@
+{
+  "icons": [
+    {
+      "src": "/assets/icons/icon_512x512.80b7a977bb31ed510f791e139f33c4fe.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/icon_384x384.b9dc743664de5ff91679d00ecd0bce8e.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/icon_256x256.bca7dea8c44be5ebe43d6cd9876007ac.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/icon_192x192.1bc611b9bfa0a0b3f9a04845e0c9f892.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/icon_128x128.131cd1013e1a371b62254d86e09be587.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icons/icon_96x96.10edd2da69e326d817f839392503cf84.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    }
+  ],
+  "name": "posm-replay-tool",
+  "short_name": "POSM replay tool",
+  "orientation": "portrait",
+  "display": "standalone",
+  "start_url": "/",
+  "description": "Replay changes to OSM",
+  "background_color": "#ffffff",
+  "theme_color": "#394B59",
+  "scope": "/"
+}
