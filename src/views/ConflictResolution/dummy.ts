@@ -251,3 +251,7 @@ export const conflictList: ConflictElement[] = [
         },
     },
 ];
+
+export const aoiInformation = {
+    locationName: 'Lalitpur',
+};

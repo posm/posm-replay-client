@@ -64,6 +64,7 @@ body {
         flex-direction: column;
         background-color: var(--color-background);
         height: 100vh;
+        overflow: auto;
 
         .navbar {
             flex-shrink: 0;
@@ -80,6 +81,7 @@ body {
             position: relative;
             flex-direction: column;
             flex-grow: 1;
+            overflow: auto;
 
             .content {
                 flex-grow: 1;

@@ -15,9 +15,11 @@ import ProgressBar from '#components/ProgressBar';
 import ConflictStatus from '#components/ConflictStatus';
 import { ConflictElement, Tags } from '#constants/types';
 
-import ConflictMap from './ConflictDetail';
+import Row from './Row';
+import Tag from './Tag';
+import ConflictMap from './ConflictMap';
 import ConflictListItem from './ConflictListItem';
-import { conflictList } from './dummy';
+import { conflictList, aoiInformation } from './dummy';
 
 import styles from './styles.scss';
 
@@ -53,9 +55,16 @@ function getTagsComparision(original: Tags, prev: Tags | undefined, next: Tags |
     });
 }
 
+type ResolveOrigin = 'theirs' | 'ours';
+
+interface Resolution {
+    [key: string]: ResolveOrigin | undefined;
+}
+
 interface State {
     activeConflictId?: string;
     showOnlyConflicts: boolean;
+    resolution: Resolution;
 }
 interface OwnProps {
     className?: string;
@@ -64,14 +73,14 @@ type Props = OwnProps;
 
 const conflictKeySelector = (d: ConflictElement) => d.id;
 
-// eslint-disable-next-line react/prefer-stateless-function
 class ConflictResolution extends React.PureComponent<Props, State> {
     public constructor(props: Props) {
         super(props);
 
         this.state = {
-            // activeConflictId: '6',
+            activeConflictId: undefined,
             showOnlyConflicts: true,
+            resolution: {},
         };
     }
 
@@ -84,7 +93,6 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         resolutionStatus: conflict.resolutionStatus,
     });
 
-    // TODO: memoize
     private getActiveConflict = (cl: ConflictElement[], activeConflictId: string | undefined) => {
         const activeConflict = cl.find(c => c.id === activeConflictId);
 
@@ -99,6 +107,17 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         console.warn('save');
     }
 
+    private handleTagClick = (key: string, origin: ResolveOrigin | undefined) => {
+        this.setState((state) => {
+            const { resolution } = state;
+            const newResolution = {
+                ...resolution,
+                [key]: origin === resolution[key] ? undefined : origin,
+            };
+            return { ...state, resolution: newResolution };
+        });
+    }
+
     private handleCheckboxChange = (value: boolean) => {
         this.setState({ showOnlyConflicts: value });
     }
@@ -107,10 +126,6 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         const { className } = this.props;
         const { activeConflictId } = this.state;
 
-        const data = {
-            locationName: 'Lalitpur',
-        };
-
         const total = conflictList.length;
         const resolved = conflictList.filter(c => c.resolutionStatus === 'resolved').length;
         const partiallyResolved = conflictList.filter(c => c.resolutionStatus === 'partially-resolved').length;
@@ -118,7 +133,10 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         const activeConflict = this.getActiveConflict(conflictList, activeConflictId);
         let children = null;
         if (activeConflict) {
-            const { showOnlyConflicts } = this.state;
+            const {
+                showOnlyConflicts,
+                resolution,
+            } = this.state;
 
             const {
                 type,
@@ -138,6 +156,8 @@ class ConflictResolution extends React.PureComponent<Props, State> {
             );
 
             const conflictedTags = tags.filter(tag => tag.conflicted);
+
+            const resolvedTags = conflictedTags.filter(item => resolution[item.title]);
 
             const modifiedMode = !!ours && !!theirs;
 
@@ -185,134 +205,161 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                     </div>
                     {modifiedMode && (
                         <div className={styles.infoContainer}>
-                            {`${conflictedTags.length} conflicts`}
-                        </div>
-                    )}
-                    <div className={styles.subHeaderContainer}>
-                        <h2 className={styles.subHeader}> Original </h2>
-                        <h2 className={styles.subHeader}> Ours </h2>
-                        <h2 className={styles.subHeader}> Theirs </h2>
-                    </div>
-                    <div className={styles.mapContainer}>
-                        <div className={styles.map}>
-                            <ConflictMap
-                                className={styles.remap}
-                                type={type}
-                                bounds={original.bounds}
-                                geoJSON={original.geoJSON}
+                            <ProgressBar
+                                className={styles.progressBar}
+                                progress={100 * (resolvedTags.length / conflictedTags.length)}
+                            />
+                            <ConflictStatus
+                                className={styles.conflictStatus}
+                                total={conflictedTags.length}
+                                resolved={resolvedTags.length}
                             />
                         </div>
-                        <div className={styles.map}>
-                            {ours ? (
+                    )}
+                    <div className={styles.titleRow}>
+                        <Row
+                            left={(
+                                <h2>
+                                    Original
+                                </h2>
+                            )}
+                            center={(
+                                <h2>
+                                    Ours
+                                </h2>
+                            )}
+                            right={(
+                                <h2>
+                                    Theirs
+                                </h2>
+                            )}
+                        />
+                    </div>
+                    <div className={styles.rowList}>
+                        <Row
+                            left={(
                                 <ConflictMap
                                     className={styles.remap}
                                     type={type}
-                                    bounds={ours.bounds}
-                                    geoJSON={ours.geoJSON}
+                                    bounds={original.bounds}
+                                    geoJSON={original.geoJSON}
                                 />
-                            ) : (
-                                <Message>
-                                    The element was deleted!
-                                </Message>
                             )}
-                        </div>
-                        <div className={styles.map}>
-                            {theirs ? (
-                                <ConflictMap
-                                    className={styles.remap}
-                                    type={type}
-                                    bounds={theirs.bounds}
-                                    geoJSON={theirs.geoJSON}
-                                />
-                            ) : (
-                                <Message>
-                                    The element was deleted!
-                                </Message>
+                            center={
+                                ours ? (
+                                    <ConflictMap
+                                        className={styles.remap}
+                                        type={type}
+                                        bounds={ours.bounds}
+                                        geoJSON={ours.geoJSON}
+                                    />
+                                ) : (
+                                    <Message>
+                                        The element was deleted!
+                                    </Message>
+                                )
+                            }
+                            right={
+                                theirs ? (
+                                    <ConflictMap
+                                        className={styles.remap}
+                                        type={type}
+                                        bounds={theirs.bounds}
+                                        geoJSON={theirs.geoJSON}
+                                    />
+                                ) : (
+                                    <Message>
+                                        The element was deleted!
+                                    </Message>
+                                )
+                            }
+                        />
+                        <Row
+                            left={(
+                                <h3 className={styles.subHeader}>
+                                    {`Tags (${originalTagCount})`}
+                                </h3>
                             )}
-                        </div>
-                    </div>
-                    <div className={styles.subHeaderContainer}>
-                        <h3 className={styles.subHeader}>
-                            {`Tags (${originalTagCount})`}
-                        </h3>
-                        <h3 className={styles.subHeader}>
-                            { ours ? `Tags (${oursTagCount})` : ''}
-                        </h3>
-                        <h3 className={styles.subHeader}>
-                            {theirs ? `Tags (${theirsTagCount})` : ''}
-                        </h3>
-                    </div>
-                    {
-                        (modifiedMode && showOnlyConflicts ? conflictedTags : tags).map(({
-                            title,
+                            center={(
+                                <h3 className={styles.subHeader}>
+                                    { ours ? `Tags (${oursTagCount})` : ''}
+                                </h3>
+                            )}
+                            right={(
+                                <h3 className={styles.subHeader}>
+                                    {theirs ? `Tags (${theirsTagCount})` : ''}
+                                </h3>
+                            )}
+                        />
+                        {
+                            (modifiedMode && showOnlyConflicts ? conflictedTags : tags)
+                                .map((item) => {
+                                    const oursSelected = resolution[item.title] === 'ours';
+                                    const theirsSelected = resolution[item.title] === 'theirs';
 
-                            originalValue,
-                            oursValue,
-                            theirsValue,
+                                    const selected = oursSelected || theirsSelected;
 
-                            oursChanged,
-                            theirsChanged,
-                            conflicted,
-                        }) => (
-                            <div
-                                className={styles.tagContainer}
-                                key={title}
-                            >
-                                <div className={styles.tag}>
-                                    {originalValue && (
-                                        <div className={styles.input}>
-                                            <div className={styles.title}>
-                                                {title}
-                                            </div>
-                                            <div className={styles.value}>
-                                                {originalValue}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className={styles.tag}>
-                                    {ours && (
-                                        <div
-                                            className={
-                                                _cs(
-                                                    styles.input,
-                                                    oursChanged && styles.changed,
-                                                    conflicted && styles.conflicted,
-                                                )
-                                            }
-                                        >
-                                            <div className={styles.title}>
-                                                {title}
-                                            </div>
-                                            <div className={styles.value}>
-                                                {oursValue}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className={styles.tag}>
-                                    {theirs && (
-                                        <div
-                                            className={
-                                                _cs(
-                                                    styles.input,
-                                                    theirsChanged && styles.changed,
-                                                    conflicted && styles.conflicted,
-                                                )
-                                            }
-                                        >
-                                            <div className={styles.title}>
-                                                {title}
-                                            </div>
-                                            <div className={styles.value}>
-                                                {theirsValue}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))
-                    }
+                                    return {
+                                        ...item,
+                                        oursSelected,
+                                        theirsSelected,
+                                        selected: oursSelected || theirsSelected,
+                                    };
+                                })
+                                .map(({
+                                    title,
+
+                                    originalValue,
+                                    oursValue,
+                                    theirsValue,
+
+                                    oursChanged,
+                                    theirsChanged,
+
+                                    oursSelected,
+                                    theirsSelected,
+
+                                    selected,
+                                    conflicted,
+                                }) => (
+                                    <Row
+                                        left={(
+                                            <Tag
+                                                title={title}
+                                                value={originalValue}
+                                                disabled
+                                            />
+                                        )}
+                                        center={
+                                            ours && (
+                                                <Tag
+                                                    title={title}
+                                                    value={oursValue}
+                                                    changed={oursChanged}
+                                                    conflicted={!selected && conflicted}
+                                                    selected={oursSelected}
+                                                    disabled={!conflicted}
+                                                    onClick={() => this.handleTagClick(title, 'ours')}
+                                                />
+                                            )
+                                        }
+                                        right={
+                                            theirs && (
+                                                <Tag
+                                                    title={title}
+                                                    value={theirsValue}
+                                                    changed={theirsChanged}
+                                                    conflicted={!selected && conflicted}
+                                                    selected={theirsSelected}
+                                                    disabled={!conflicted}
+                                                    onClick={() => this.handleTagClick(title, 'theirs')}
+                                                />
+                                            )
+                                        }
+                                    />
+                                ))
+                        }
+                    </div>
                 </div>
             );
         } else {
@@ -328,7 +375,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                 <div className={styles.sidebar}>
                     <header className={styles.header}>
                         <h2 className={styles.heading}>
-                            { data.locationName }
+                            { aoiInformation.locationName }
                         </h2>
                         <div className={styles.details}>
                             <ProgressBar
@@ -343,6 +390,9 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                             />
                         </div>
                     </header>
+                    <h3 className={styles.conflictHeader}>
+                        Conflicts
+                    </h3>
                     <ListView
                         className={styles.conflictList}
                         data={conflictList}

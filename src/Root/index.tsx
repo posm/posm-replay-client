@@ -2,6 +2,7 @@ import React from 'react';
 import { Store } from 'redux';
 import { Provider } from 'react-redux';
 import { persistStore } from 'redux-persist';
+
 import { initializeStyles } from '#rsu/styles';
 
 import store from '#store';

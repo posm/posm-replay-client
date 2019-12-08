@@ -1,0 +1,36 @@
+.input {
+    display: block;
+    outline: none;
+    border: 1px solid var(--color-separator);
+    border-bottom: 2px solid var(--color-separator);
+    border-radius: 4px;
+    background-color: transparent;
+    padding: var(--spacing-small);
+    width: 100%;
+    min-height: 50px;
+    text-align: left;
+    color: inherit;
+    font-family: inherit;
+
+    &.clickable {
+        cursor: pointer;
+    }
+
+    &.changed {
+        background-color: var(--color-foreground);
+    }
+
+    &.conflicted {
+        border-bottom: 2px solid var(--color-danger);
+        background-color: var(--color-foreground);
+    }
+
+    &.selected {
+        border-bottom: 2px solid var(--color-accent);
+        background-color: var(--color-foreground);
+    }
+
+    .title {
+        font-weight: bold;
+    }
+}

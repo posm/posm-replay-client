@@ -3,14 +3,14 @@ import React from 'react';
 import { Router } from '@reach/router';
 import { _cs } from '@togglecorp/fujs';
 
-import DangerButton from '#rsca/Button/DangerButton';
+import Button from '#rsu/../v2/Action/Button';
+import LoadingAnimation from '#rscv/LoadingAnimation';
+import Message from '#rsu/../v2/View/Message';
 
 import Navbar from '#components/Navbar';
 import errorBound from '#components/errorBound';
 import helmetify from '#components/helmetify';
 
-import LoadingAnimation from '#rscv/LoadingAnimation';
-import Message from '#rscv/Message';
 
 import { routeSettings } from '#constants';
 import styles from './styles.scss';
@@ -38,13 +38,14 @@ const BaseErrorInPage = ({
         <div className={styles.message}>
             { message }
         </div>
-        <DangerButton
+        <Button
             className={styles.reloadButton}
             transparent
             onClick={onReload}
+            buttonType="button-danger"
         >
             Reload
-        </DangerButton>
+        </Button>
     </Message>
 );
 
