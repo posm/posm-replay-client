@@ -1,5 +1,19 @@
 import { ConflictElement, Tags } from '#constants/types';
 
+interface Obj<T> {
+    [key: string]: T;
+}
+
+function removeUndefined<T>(obj: Obj<T>) {
+    const newObject = { ...obj };
+    Object.keys(newObject).forEach((key: string) => {
+        if (newObject[key] === undefined) {
+            delete newObject[key];
+        }
+    });
+    return newObject;
+}
+
 const geoJSONForBuilding: GeoJSON.FeatureCollection<GeoJSON.Geometry> = {
     type: 'FeatureCollection',
     features: [
@@ -150,14 +164,14 @@ export const conflictList: ConflictElement[] = [
                 id: 1,
                 version: 3,
             },
-            tags: {
+            tags: removeUndefined({
                 ...tagForEqArea,
                 leisure: 'playground',
                 'damage:event': 'nepal earthquake 2015',
                 'damage:year': '2015',
                 'ipd:status_20150427': undefined,
                 'idp:camp_site': 'spontaneous camp',
-            },
+            }),
             bounds: [85.312410593, 27.6733618869, 85.3133171797, 27.6739842374],
             geoJSON: geoJSONForBuilding,
         },
@@ -166,13 +180,13 @@ export const conflictList: ConflictElement[] = [
                 id: 1,
                 version: 2,
             },
-            tags: {
+            tags: removeUndefined({
                 ...tagForEqArea,
-                leisure: 'play-ground',
+                leisure: 'playground',
                 'damage:event': undefined,
                 'damage:project': 'nepal earthquake 2015',
                 'ipd:status_20150427': 'confirmed',
-            },
+            }),
             bounds: [85.312410593, 27.6733618869, 85.3133171797, 27.6739842374],
             geoJSON: geoJSONForBuilding,
         },
@@ -196,12 +210,12 @@ export const conflictList: ConflictElement[] = [
                 id: 1,
                 version: 1,
             },
-            tags: {
+            tags: removeUndefined({
                 ...tagForSchool,
                 'student:count': '890',
                 'operator:type': 'public',
                 source: undefined,
-            },
+            }),
             bounds: [85.3149935603, 27.6731611662, 85.3162327409, 27.67385953],
             geoJSON: geoJSONForRoad,
         },
@@ -226,12 +240,12 @@ export const conflictList: ConflictElement[] = [
                 id: 1,
                 version: 1,
             },
-            tags: {
+            tags: removeUndefined({
                 ...tagForCollege,
                 'name:ne': undefined,
                 'add:street': 'Chakupat',
                 'add:ward': '10',
-            },
+            }),
             bounds: [85.3139528632, 27.6737027549, 85.3151008487, 27.6743393556],
             geoJSON: geoJSONForPoint,
         },

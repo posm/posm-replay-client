@@ -7,7 +7,7 @@ import MapBounds from '#re-map/MapBounds';
 import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
 
-import { Content, ElementType } from '#constants/types';
+import { Content, ElementType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
 
@@ -94,126 +94,89 @@ const pointLayerOptions: mapboxgl.Layer = {
 
 interface Props {
     className?: string;
-    data?: Content;
     type: ElementType;
-    title: string;
+    bounds: Bounds;
+    geoJSON: Content['geoJSON'];
 }
 
-interface State {
-}
-
-class ConflictDetail extends React.PureComponent<Props, State> {
+class ConflictMap extends React.PureComponent<Props> {
     public render() {
         const {
-            className,
             type,
-            data,
-            title,
-        } = this.props;
-
-        if (!data) {
-            return (
-                <div className={_cs(className, styles.conflictDetail)}>
-                    <h2>
-                        {title}
-                    </h2>
-                </div>
-            );
-        }
-
-        const {
             bounds,
             geoJSON,
-            tags,
-            meta,
-        } = data;
+            className,
+        } = this.props;
 
         const mapOptions = {
             bounds,
         };
 
         return (
-            <div className={_cs(className, styles.conflictDetail)}>
-                <h2>
-                    {title}
-                </h2>
-                <Map
-                    mapStyle={mapStyle}
-                    mapOptions={mapOptions}
-                    scaleControlShown
-                    navControlShown
-                >
-                    <MapContainer
-                        className={styles.map}
-                    />
-                    <MapBounds
-                        bounds={mapOptions.bounds}
-                        padding={50}
-                    />
-                    {geoJSON && type === 'area' && (
-                        <MapSource
-                            sourceKey="area"
-                            geoJSON={geoJSON}
-                            sourceOptions={sourceOptions}
-                        >
-                            <MapLayer
-                                layerKey="fill"
-                                layerOptions={areaFillLayerOptions}
-                            />
-                            <MapLayer
-                                layerKey="outline"
-                                layerOptions={areaOutlineLayerOptions}
-                            />
-                            <MapLayer
-                                layerKey="circle"
-                                layerOptions={linePointOptions}
-                            />
-                        </MapSource>
-                    )}
-                    {geoJSON && type === 'line' && (
-                        <MapSource
-                            sourceKey="line"
-                            geoJSON={geoJSON}
-                            sourceOptions={sourceOptions}
-                        >
-                            <MapLayer
-                                layerKey="outline"
-                                layerOptions={lineLayerOptions}
-                            />
-                            <MapLayer
-                                layerKey="circle"
-                                layerOptions={linePointOptions}
-                            />
-                        </MapSource>
-                    )}
-                    {geoJSON && type === 'point' && (
-                        <MapSource
-                            sourceKey="point"
-                            geoJSON={geoJSON}
-                            sourceOptions={sourceOptions}
-                        >
-                            <MapLayer
-                                layerKey="circle"
-                                layerOptions={pointLayerOptions}
-                            />
-                        </MapSource>
-                    )}
-                </Map>
-                <h3>
-                    Tags
-                </h3>
-                <pre>
-                    {JSON.stringify(tags, null, 2)}
-                </pre>
-                <h3>
-                    Meta
-                </h3>
-                <pre>
-                    {JSON.stringify(meta, null, 2)}
-                </pre>
-            </div>
+            <Map
+                mapStyle={mapStyle}
+                mapOptions={mapOptions}
+                scaleControlShown
+                navControlShown
+            >
+                <MapContainer
+                    className={_cs(styles.map, className)}
+                />
+                <MapBounds
+                    bounds={mapOptions.bounds}
+                    padding={50}
+                />
+                {geoJSON && type === 'area' && (
+                    <MapSource
+                        sourceKey="area"
+                        geoJSON={geoJSON}
+                        sourceOptions={sourceOptions}
+                    >
+                        <MapLayer
+                            layerKey="fill"
+                            layerOptions={areaFillLayerOptions}
+                        />
+                        <MapLayer
+                            layerKey="outline"
+                            layerOptions={areaOutlineLayerOptions}
+                        />
+                        <MapLayer
+                            layerKey="circle"
+                            layerOptions={linePointOptions}
+                        />
+                    </MapSource>
+                )}
+                {geoJSON && type === 'line' && (
+                    <MapSource
+                        sourceKey="line"
+                        geoJSON={geoJSON}
+                        sourceOptions={sourceOptions}
+                    >
+                        <MapLayer
+                            layerKey="outline"
+                            layerOptions={lineLayerOptions}
+                        />
+                        <MapLayer
+                            layerKey="circle"
+                            layerOptions={linePointOptions}
+                        />
+                    </MapSource>
+                )}
+                {geoJSON && type === 'point' && (
+                    <MapSource
+                        sourceKey="point"
+                        geoJSON={geoJSON}
+                        sourceOptions={sourceOptions}
+                    >
+                        <MapLayer
+                            layerKey="circle"
+                            layerOptions={pointLayerOptions}
+                        />
+                    </MapSource>
+                )}
+            </Map>
         );
     }
 }
 
-export default ConflictDetail;
+export default ConflictMap;
