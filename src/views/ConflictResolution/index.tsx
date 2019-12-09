@@ -243,6 +243,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                     type={type}
                                     bounds={original.bounds}
                                     geoJSON={original.geoJSON}
+                                    defaultSelectedStyle="Humanitarian"
                                 />
                             )}
                             center={
@@ -252,6 +253,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                         type={type}
                                         bounds={ours.bounds}
                                         geoJSON={ours.geoJSON}
+                                        defaultSelectedStyle="Humanitarian"
                                     />
                                 ) : (
                                     <Message>
@@ -266,6 +268,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                         type={type}
                                         bounds={theirs.bounds}
                                         geoJSON={theirs.geoJSON}
+                                        defaultSelectedStyle="OSM"
                                     />
                                 ) : (
                                     <Message>
@@ -323,6 +326,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                     conflicted,
                                 }) => (
                                     <Row
+                                        key={title}
                                         left={(
                                             <Tag
                                                 title={title}

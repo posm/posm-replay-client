@@ -1,6 +1,8 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
+import SegmentInput from '#rsci/SegmentInput';
+
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
@@ -11,31 +13,131 @@ import { Content, ElementType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
 
+type StyleNames = 'WikiMedia' | 'OSM' | 'World Imagery' | 'Humanitarian';
 
-const mapStyle: mapboxgl.MapboxOptions['style'] = {
-    version: 8,
-    name: 'Base Layer',
-    sources: {
-        mm: {
-            type: 'raster',
-            url: process.env.REACT_APP_OSM_LAYER_URL,
-            tileSize: 256,
-            // tileSize: 256,
+interface MapStyle {
+    name: StyleNames;
+    data: mapboxgl.MapboxOptions['style'];
+}
+
+// url: process.env.REACT_APP_OSM_LAYER_URL,
+const mapStyles: MapStyle[] = [
+    {
+        name: 'Wikimedia',
+        data: {
+            version: 8,
+            name: 'Wikimedia',
+            sources: {
+                base: {
+                    type: 'raster',
+                    tiles: [
+                        'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png',
+                    ],
+                    tileSize: 256,
+                },
+            },
+            layers: [
+                {
+                    id: 'background',
+                    type: 'background',
+                    paint: { 'background-color': 'rgb(239, 239, 239)' },
+                },
+                {
+                    id: 'base',
+                    type: 'raster',
+                    source: 'base',
+                },
+            ],
         },
     },
-    layers: [
-        {
-            id: 'background',
-            type: 'background',
-            paint: { 'background-color': 'rgb(239, 239, 239)' },
+    {
+        name: 'OSM',
+        data: {
+            version: 8,
+            name: 'OSM',
+            sources: {
+                base: {
+                    type: 'raster',
+                    tiles: [
+                        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    ],
+                    tileSize: 256,
+                },
+            },
+            layers: [
+                {
+                    id: 'background',
+                    type: 'background',
+                    paint: { 'background-color': 'rgb(239, 239, 239)' },
+                },
+                {
+                    id: 'base',
+                    type: 'raster',
+                    source: 'base',
+                },
+            ],
         },
-        {
-            id: 'mm_layer',
-            type: 'raster',
-            source: 'mm',
+    },
+    {
+        name: 'World Imagery',
+        data: {
+            version: 8,
+            name: 'World Imagery',
+            sources: {
+                base: {
+                    type: 'raster',
+                    tiles: [
+                        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg',
+                    ],
+                    tileSize: 256,
+                },
+            },
+            layers: [
+                {
+                    id: 'background',
+                    type: 'background',
+                    paint: { 'background-color': 'rgb(239, 239, 239)' },
+                },
+                {
+                    id: 'base',
+                    type: 'raster',
+                    source: 'base',
+                },
+            ],
         },
-    ],
-};
+    },
+    {
+        name: 'Humanitarian',
+        data: {
+            version: 8,
+            name: 'Humanitarian',
+            sources: {
+                base: {
+                    type: 'raster',
+                    tiles: [
+                        'http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                        'http://b.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                    ],
+                    tileSize: 256,
+                },
+            },
+            layers: [
+                {
+                    id: 'background',
+                    type: 'background',
+                    paint: { 'background-color': 'rgb(239, 239, 239)' },
+                },
+                {
+                    id: 'base',
+                    type: 'raster',
+                    source: 'base',
+                },
+            ],
+        },
+    },
+];
 
 const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
     type: 'geojson',
@@ -97,9 +199,22 @@ interface Props {
     type: ElementType;
     bounds: Bounds;
     geoJSON: Content['geoJSON'];
+    defaultSelectedStyle?: StyleNames;
 }
 
-class ConflictMap extends React.PureComponent<Props> {
+interface State {
+    selectedStyle?: StyleNames;
+}
+
+class ConflictMap extends React.PureComponent<Props, State> {
+    public constructor(props: Props) {
+        super(props);
+        const { defaultSelectedStyle } = props;
+        this.state = {
+            selectedStyle: defaultSelectedStyle,
+        };
+    }
+
     public render() {
         const {
             type,
@@ -107,14 +222,22 @@ class ConflictMap extends React.PureComponent<Props> {
             geoJSON,
             className,
         } = this.props;
+        const {
+            selectedStyle,
+        } = this.state;
 
         const mapOptions = {
             bounds,
         };
 
+        let mapStyle = mapStyles.find(item => item.name === selectedStyle);
+        if (mapStyle === undefined) {
+            mapStyle = mapStyles[0];
+        }
+
         return (
             <Map
-                mapStyle={mapStyle}
+                mapStyle={mapStyle.data}
                 mapOptions={mapOptions}
                 scaleControlShown
                 navControlShown
@@ -174,6 +297,17 @@ class ConflictMap extends React.PureComponent<Props> {
                         />
                     </MapSource>
                 )}
+
+                <SegmentInput
+                    className={styles.layerSwitcher}
+                    showLabel={false}
+                    showHintAndError={false}
+                    labelSelector={(item: MapStyle) => item.name}
+                    keySelector={(item: MapStyle) => item.name}
+                    value={selectedStyle}
+                    options={mapStyles}
+                    onChange={(value: StyleNames) => this.setState({ selectedStyle: value })}
+                />
             </Map>
         );
     }
