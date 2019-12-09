@@ -154,7 +154,7 @@ const areaOutlineLayerOptions: mapboxgl.Layer = {
     id: 'not-required',
     type: 'line',
     paint: {
-        'line-color': 'red',
+        'line-color': 'blue',
         'line-opacity': 0.8,
         'line-width': 3,
     },
@@ -166,7 +166,8 @@ const linePointOptions: mapboxgl.Layer = {
         'circle-color': 'red',
         'circle-radius': 3,
         'circle-stroke-width': 2,
-        'circle-stroke-color': 'white',
+        'circle-stroke-color': 'blue',
+        'circle-stroke-opacity': 0.5,
     },
 };
 
@@ -174,7 +175,7 @@ const lineLayerOptions: mapboxgl.Layer = {
     id: 'not-required',
     type: 'line',
     paint: {
-        'line-color': 'red',
+        'line-color': 'blue',
         'line-opacity': 0.8,
         'line-width': 5,
     },
@@ -188,7 +189,7 @@ const pointLayerOptions: mapboxgl.Layer = {
         'circle-radius': 8,
         'circle-opacity': 0.5,
         'circle-stroke-width': 3,
-        'circle-stroke-color': 'red',
+        'circle-stroke-color': 'blue',
         'circle-stroke-opacity': 0.8,
     },
 };

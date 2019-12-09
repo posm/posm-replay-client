@@ -51,6 +51,59 @@ const geoJSONForBuilding: GeoJSON.FeatureCollection<GeoJSON.Geometry> = {
     ],
 };
 
+const geoJSONForBuilding2: GeoJSON.FeatureCollection<GeoJSON.Geometry> = {
+    type: 'FeatureCollection',
+    features: [
+        {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+                type: 'Polygon',
+                coordinates: [
+                    [
+                        [
+                            85.31280487775803,
+                            27.67355429333438,
+                        ],
+                        [
+                            85.31292021274567,
+                            27.673511536378154,
+                        ],
+                        [
+                            85.31294971704483,
+                            27.67360180104389,
+                        ],
+                        [
+                            85.31293362379073,
+                            27.67360417642884,
+                        ],
+                        [
+                            85.3129443526268,
+                            27.67363030565969,
+                        ],
+                        [
+                            85.31290411949158,
+                            27.673637431812473,
+                        ],
+                        [
+                            85.31289607286453,
+                            27.673620804121928,
+                        ],
+                        [
+                            85.31283974647522,
+                            27.67363505642826,
+                        ],
+                        [
+                            85.31280487775803,
+                            27.67355429333438,
+                        ],
+                    ],
+                ],
+            },
+        },
+    ],
+};
+
 const geoJSONForRoad: GeoJSON.FeatureCollection<GeoJSON.Geometry> = {
     type: 'FeatureCollection',
     features: [
@@ -188,7 +241,7 @@ export const conflictList: ConflictElement[] = [
                 'ipd:status_20150427': 'confirmed',
             }),
             bounds: [85.312410593, 27.6733618869, 85.3133171797, 27.6739842374],
-            geoJSON: geoJSONForBuilding,
+            geoJSON: geoJSONForBuilding2,
         },
     },
     {

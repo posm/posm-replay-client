@@ -1,10 +1,7 @@
-.conflictDetail {
-    flex-basis: 33%;
-    flex-shrink: 0;
-    padding: var(--spacing-large);
+.map {
+    height: 300px;
+}
 
-    .map {
-        flex-grow: 1;
-        height: 300px;
-    }
+.layer-switcher {
+    padding: var(--spacing-small);
 }
