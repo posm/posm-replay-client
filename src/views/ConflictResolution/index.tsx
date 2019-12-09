@@ -213,6 +213,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                 className={styles.conflictStatus}
                                 total={conflictedTags.length}
                                 resolved={resolvedTags.length}
+                                label="tag conflicts"
                             />
                         </div>
                     )}
@@ -237,6 +238,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                     </div>
                     <div className={styles.rowList}>
                         <Row
+                            leftClassName={styles.mapContainer}
                             left={(
                                 <ConflictMap
                                     className={styles.remap}
@@ -246,6 +248,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                     defaultSelectedStyle="Humanitarian"
                                 />
                             )}
+                            centerClassName={styles.mapContainer}
                             center={
                                 ours ? (
                                     <ConflictMap
@@ -261,6 +264,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                     </Message>
                                 )
                             }
+                            rightClassName={styles.mapContainer}
                             right={
                                 theirs ? (
                                     <ConflictMap
@@ -327,6 +331,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                 }) => (
                                     <Row
                                         key={title}
+                                        leftClassName={styles.tagContainer}
                                         left={(
                                             <Tag
                                                 title={title}
@@ -334,6 +339,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                                 disabled
                                             />
                                         )}
+                                        centerClassName={styles.tagContainer}
                                         center={
                                             ours && (
                                                 <Tag
@@ -347,6 +353,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                                 />
                                             )
                                         }
+                                        rightClassName={styles.tagContainer}
                                         right={
                                             theirs && (
                                                 <Tag

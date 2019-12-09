@@ -6,6 +6,6 @@
     .row-item {
         flex-basis: calc(100% / 3);
         flex-shrink: 0;
-        padding: var(--spacing-medium);
+        padding: var(--spacing-medium) var(--spacing-extra-large);
     }
 }

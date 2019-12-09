@@ -1,7 +1,12 @@
 .map {
+    border: 1px solid var(--color-separator);
+    border-radius: 4px;
     height: 300px;
 }
 
 .layer-switcher {
-    padding: var(--spacing-small);
+    position: absolute;
+    bottom: var(--spacing-large);
+    left: var(--spacing-large);
+    z-index: 11;
 }

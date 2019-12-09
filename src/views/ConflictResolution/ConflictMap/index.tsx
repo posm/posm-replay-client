@@ -13,7 +13,7 @@ import { Content, ElementType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
 
-type StyleNames = 'WikiMedia' | 'OSM' | 'World Imagery' | 'Humanitarian';
+type StyleNames = 'Wikimedia' | 'OSM' | 'World Imagery' | 'Humanitarian';
 
 interface MapStyle {
     name: StyleNames;

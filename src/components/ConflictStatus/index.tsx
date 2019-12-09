@@ -5,9 +5,10 @@ import styles from './styles.scss';
 
 interface Props {
     className?: string;
-    resolved?: number;
+    resolved: number;
     total: number;
-    partiallyResolved?: number;
+    partiallyResolved: number;
+    label: string;
 }
 
 class ConflictStatus extends React.PureComponent<Props> {
@@ -15,12 +16,14 @@ class ConflictStatus extends React.PureComponent<Props> {
         resolved: 0,
         partiallyResolved: 0,
         total: 0,
+        label: 'conflicts',
     };
 
     public render() {
         const {
             className,
             resolved,
+            label,
             total,
         } = this.props;
 
@@ -36,7 +39,7 @@ class ConflictStatus extends React.PureComponent<Props> {
                     {total}
                 </div>
                 <div className={styles.postLabel}>
-                    conflicts resolved
+                    {`${label} resolved`}
                 </div>
             </div>
         );
