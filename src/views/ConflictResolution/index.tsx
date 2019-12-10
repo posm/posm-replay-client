@@ -118,6 +118,10 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         });
     }
 
+    private handleMapClick = (origin: ResolveOrigin | undefined) => {
+        this.handleTagClick('$map', origin);
+    }
+
     private handleCheckboxChange = (value: boolean) => {
         this.setState({ showOnlyConflicts: value });
     }
@@ -161,6 +165,23 @@ class ConflictResolution extends React.PureComponent<Props, State> {
 
             const modifiedMode = !!ours && !!theirs;
 
+            const oursMapSelected = resolution.$map === 'ours';
+            const theirsMapSelected = resolution.$map === 'theirs';
+
+            // NOTE: ours and theirs check for modifiedMode
+            const mapConflicted = !!ours && !!theirs && ours.geoJSON !== theirs.geoJSON;
+
+            const mapSelected = oursMapSelected || theirsMapSelected;
+
+            let resolvedCount = resolvedTags.length;
+            let conflictedCount = conflictedTags.length;
+            if (mapConflicted) {
+                conflictedCount += 1;
+            }
+            if (mapConflicted && mapSelected) {
+                resolvedCount += 1;
+            }
+
             children = (
                 <div className={styles.content}>
                     <div className={styles.headerContainer}>
@@ -173,10 +194,9 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                     <Checkbox
                                         onChange={this.handleCheckboxChange}
                                         value={showOnlyConflicts}
-                                        label="Show only conflicts"
+                                        label="Only show conflicted tags"
                                     />
                                     <Button
-                                        className={styles.button}
                                         onClick={this.handleSave}
                                         buttonType="button-primary"
                                     >
@@ -186,14 +206,12 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                             ) : (
                                 <>
                                     <Button
-                                        className={styles.button}
                                         onClick={this.handleSave}
                                         buttonType="button-primary"
                                     >
                                         Delete
                                     </Button>
                                     <Button
-                                        className={styles.button}
                                         onClick={this.handleSave}
                                         buttonType="button-primary"
                                     >
@@ -207,17 +225,17 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                         <div className={styles.infoContainer}>
                             <ProgressBar
                                 className={styles.progressBar}
-                                progress={100 * (resolvedTags.length / conflictedTags.length)}
+                                progress={100 * (resolvedCount / conflictedCount)}
                             />
                             <ConflictStatus
                                 className={styles.conflictStatus}
-                                total={conflictedTags.length}
-                                resolved={resolvedTags.length}
+                                total={conflictedCount}
+                                resolved={resolvedCount}
                                 label="tag conflicts"
                             />
                         </div>
                     )}
-                    <div className={styles.titleRow}>
+                    <div className={styles.titleRowContainer}>
                         <Row
                             left={(
                                 <h2>
@@ -236,7 +254,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                             )}
                         />
                     </div>
-                    <div className={styles.rowList}>
+                    <div className={styles.tagRowsContainer}>
                         <Row
                             leftClassName={styles.mapContainer}
                             left={(
@@ -246,6 +264,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                     bounds={original.bounds}
                                     geoJSON={original.geoJSON}
                                     defaultSelectedStyle="Humanitarian"
+                                    disabled
                                 />
                             )}
                             centerClassName={styles.mapContainer}
@@ -257,6 +276,10 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                         bounds={ours.bounds}
                                         geoJSON={ours.geoJSON}
                                         defaultSelectedStyle="Humanitarian"
+                                        onClick={() => this.handleMapClick('ours')}
+                                        conflicted={!mapSelected && mapConflicted}
+                                        selected={oursMapSelected}
+                                        disabled={!mapConflicted}
                                     />
                                 ) : (
                                     <Message>
@@ -273,6 +296,10 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                         bounds={theirs.bounds}
                                         geoJSON={theirs.geoJSON}
                                         defaultSelectedStyle="OSM"
+                                        onClick={() => this.handleMapClick('theirs')}
+                                        conflicted={!mapSelected && mapConflicted}
+                                        selected={theirsMapSelected}
+                                        disabled={!mapConflicted}
                                     />
                                 ) : (
                                     <Message>
@@ -282,6 +309,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                             }
                         />
                         <Row
+                            className={styles.subHeaderRow}
                             left={(
                                 <h3 className={styles.subHeader}>
                                     {`Tags (${originalTagCount})`}

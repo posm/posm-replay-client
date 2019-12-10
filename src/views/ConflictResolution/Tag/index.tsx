@@ -6,11 +6,12 @@ import styles from './styles.scss';
 interface Props {
     title: string;
     value?: string;
-    conflicted: boolean;
-    changed: boolean;
-    selected: boolean;
     onClick?: () => void;
+
+    changed: boolean;
+    conflicted: boolean;
     disabled: boolean;
+    selected: boolean;
 }
 
 const Tag = (props: Props) => {

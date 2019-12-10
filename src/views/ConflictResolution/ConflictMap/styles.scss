@@ -1,12 +1,37 @@
-.map {
+.conflict-map {
+    position: relative;
     border: 1px solid var(--color-separator);
+    border-bottom: 2px solid var(--color-separator);
     border-radius: 4px;
-    height: 300px;
-}
 
-.layer-switcher {
-    position: absolute;
-    bottom: var(--spacing-large);
-    left: var(--spacing-large);
-    z-index: 11;
+    &.conflicted {
+        border-bottom: 2px solid var(--color-danger);
+        background-color: var(--color-foreground);
+    }
+
+    &.selected {
+        border-bottom: 2px solid var(--color-success);
+        background-color: var(--color-foreground);
+    }
+
+    .map {
+        height: 300px;
+
+    }
+
+    .layer-switcher {
+        position: absolute;
+        bottom: var(--spacing-small);
+        left: var(--spacing-small);
+        z-index: 11;
+    }
+
+    .select-button {
+        position: absolute;
+        // bottom: var(--spacing-small);
+        // left: var(--spacing-small);
+        top: 0;
+        left: 0;
+        z-index: 11;
+    }
 }

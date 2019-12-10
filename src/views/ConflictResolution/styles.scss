@@ -87,21 +87,24 @@
             }
         }
 
-        .title-row {
+        .title-row-container {
             flex-shrink: 0;
         }
 
-        .row-list {
-            flex-grow: 1;
-            overflow: auto;
+        .tag-rows-container {
+            .sub-header-row {
+                .sub-header {
+                }
+            }
 
             .map-container {
-                position: relative;
+                .remap {
+                }
             }
-        }
 
-        .tag-container {
-            display: flex;
+            .tag-container {
+                display: flex;
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
 import SegmentInput from '#rsci/SegmentInput';
+import Button from '#rsu/../v2/Action/Button';
 
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
@@ -197,10 +198,16 @@ const pointLayerOptions: mapboxgl.Layer = {
 
 interface Props {
     className?: string;
+    mapClassName?: string;
     type: ElementType;
     bounds: Bounds;
     geoJSON: Content['geoJSON'];
     defaultSelectedStyle?: StyleNames;
+    onClick?: () => void;
+
+    conflicted: boolean;
+    disabled: boolean;
+    selected: boolean;
 }
 
 interface State {
@@ -208,6 +215,12 @@ interface State {
 }
 
 class ConflictMap extends React.PureComponent<Props, State> {
+    public static defaultProps = {
+        conflicted: false,
+        selected: false,
+        disabled: false,
+    }
+
     public constructor(props: Props) {
         super(props);
         const { defaultSelectedStyle } = props;
@@ -222,6 +235,12 @@ class ConflictMap extends React.PureComponent<Props, State> {
             bounds,
             geoJSON,
             className,
+            mapClassName,
+            onClick,
+
+            conflicted,
+            selected,
+            disabled,
         } = this.props;
         const {
             selectedStyle,
@@ -237,79 +256,99 @@ class ConflictMap extends React.PureComponent<Props, State> {
         }
 
         return (
-            <Map
-                mapStyle={mapStyle.data}
-                mapOptions={mapOptions}
-                scaleControlShown
-                navControlShown
+            <div
+                className={
+                    _cs(
+                        className,
+                        styles.conflictMap,
+                        conflicted && styles.conflicted,
+                        selected && styles.selected,
+                    )
+                }
             >
-                <MapContainer
-                    className={_cs(styles.map, className)}
-                />
-                <MapBounds
-                    bounds={mapOptions.bounds}
-                    padding={50}
-                />
-                {geoJSON && type === 'area' && (
-                    <MapSource
-                        sourceKey="area"
-                        geoJSON={geoJSON}
-                        sourceOptions={sourceOptions}
-                    >
-                        <MapLayer
-                            layerKey="fill"
-                            layerOptions={areaFillLayerOptions}
-                        />
-                        <MapLayer
-                            layerKey="outline"
-                            layerOptions={areaOutlineLayerOptions}
-                        />
-                        <MapLayer
-                            layerKey="circle"
-                            layerOptions={linePointOptions}
-                        />
-                    </MapSource>
-                )}
-                {geoJSON && type === 'line' && (
-                    <MapSource
-                        sourceKey="line"
-                        geoJSON={geoJSON}
-                        sourceOptions={sourceOptions}
-                    >
-                        <MapLayer
-                            layerKey="outline"
-                            layerOptions={lineLayerOptions}
-                        />
-                        <MapLayer
-                            layerKey="circle"
-                            layerOptions={linePointOptions}
-                        />
-                    </MapSource>
-                )}
-                {geoJSON && type === 'point' && (
-                    <MapSource
-                        sourceKey="point"
-                        geoJSON={geoJSON}
-                        sourceOptions={sourceOptions}
-                    >
-                        <MapLayer
-                            layerKey="circle"
-                            layerOptions={pointLayerOptions}
-                        />
-                    </MapSource>
-                )}
-
-                <SegmentInput
-                    className={styles.layerSwitcher}
-                    showLabel={false}
-                    showHintAndError={false}
-                    labelSelector={(item: MapStyle) => item.name}
-                    keySelector={(item: MapStyle) => item.name}
-                    value={selectedStyle}
-                    options={mapStyles}
-                    onChange={(value: StyleNames) => this.setState({ selectedStyle: value })}
-                />
-            </Map>
+                <Map
+                    mapStyle={mapStyle.data}
+                    mapOptions={mapOptions}
+                    scaleControlShown
+                    navControlShown
+                >
+                    <MapContainer
+                        className={_cs(styles.map, mapClassName)}
+                    />
+                    <MapBounds
+                        bounds={mapOptions.bounds}
+                        padding={50}
+                    />
+                    {geoJSON && type === 'area' && (
+                        <MapSource
+                            sourceKey="area"
+                            geoJSON={geoJSON}
+                            sourceOptions={sourceOptions}
+                        >
+                            <MapLayer
+                                layerKey="fill"
+                                layerOptions={areaFillLayerOptions}
+                            />
+                            <MapLayer
+                                layerKey="outline"
+                                layerOptions={areaOutlineLayerOptions}
+                            />
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={linePointOptions}
+                            />
+                        </MapSource>
+                    )}
+                    {geoJSON && type === 'line' && (
+                        <MapSource
+                            sourceKey="line"
+                            geoJSON={geoJSON}
+                            sourceOptions={sourceOptions}
+                        >
+                            <MapLayer
+                                layerKey="outline"
+                                layerOptions={lineLayerOptions}
+                            />
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={linePointOptions}
+                            />
+                        </MapSource>
+                    )}
+                    {geoJSON && type === 'point' && (
+                        <MapSource
+                            sourceKey="point"
+                            geoJSON={geoJSON}
+                            sourceOptions={sourceOptions}
+                        >
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={pointLayerOptions}
+                            />
+                        </MapSource>
+                    )}
+                    <SegmentInput
+                        className={styles.layerSwitcher}
+                        showLabel={false}
+                        showHintAndError={false}
+                        labelSelector={(item: MapStyle) => item.name}
+                        keySelector={(item: MapStyle) => item.name}
+                        value={selectedStyle}
+                        options={mapStyles}
+                        onChange={(value: StyleNames) => this.setState({ selectedStyle: value })}
+                    />
+                    {!disabled && onClick && (
+                        <Button
+                            className={styles.selectButton}
+                            buttonType={selected ? 'button-success' : 'button-default'}
+                            iconName={selected ? 'checkmarkCircle' : 'checkmarkCircleEmpty'}
+                            onClick={onClick}
+                        >
+                            { selected ? 'Selected' : 'Select' }
+                        </Button>
+                    )}
+                </Map>
+            </div>
         );
     }
 }
