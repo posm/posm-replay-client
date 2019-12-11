@@ -1,37 +1,38 @@
+:root {
+    --height-map: 300px;
+}
+
 .conflict-map {
     position: relative;
-    border: 1px solid var(--color-separator);
-    border-bottom: 2px solid var(--color-separator);
-    border-radius: 4px;
+    border: var(--width-seperator-thin) solid var(--color-separator);
+    border-bottom: var(--width-separator-medium) solid var(--color-separator);
+    border-radius: var(--radius-border-large);
 
     &.conflicted {
-        border-bottom: 2px solid var(--color-danger);
+        border-bottom-color: var(--color-danger);
         background-color: var(--color-foreground);
     }
 
     &.selected {
-        border-bottom: 2px solid var(--color-success);
+        border-bottom-color: var(--color-success);
         background-color: var(--color-foreground);
     }
 
     .map {
-        height: 300px;
-
+        height: var(--height-map);
     }
 
     .layer-switcher {
         position: absolute;
         bottom: var(--spacing-small);
         left: var(--spacing-small);
-        z-index: 11;
+        z-index: var(--map-elements-z-index);
     }
 
     .select-button {
         position: absolute;
-        // bottom: var(--spacing-small);
-        // left: var(--spacing-small);
         top: 0;
         left: 0;
-        z-index: 11;
+        z-index: var(--map-elements-z-index);
     }
 }

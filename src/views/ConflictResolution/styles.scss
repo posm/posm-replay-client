@@ -1,3 +1,7 @@
+:root {
+    --progress-bar-max-width: 256px;
+}
+
 .conflict-resolution {
     display: flex;
     overflow: auto;
@@ -79,7 +83,7 @@
             .progress-bar {
                 margin: var(--spacing-extra-small) 0;
                 width: 100%;
-                max-width: 256px;
+                max-width: var(--progress-bar-max-width);
             }
 
             .conflict-status {
@@ -93,13 +97,11 @@
 
         .tag-rows-container {
             .sub-header-row {
-                .sub-header {
-                }
+                .sub-header {}
             }
 
             .map-container {
-                .remap {
-                }
+                .remap {}
             }
 
             .tag-container {

@@ -19,6 +19,8 @@ const styleProperties = {
 
     heightProgressBar: '6px',
     radiusBorderProgressBar: '3px',
+
+    mapElementsZIndex: 11,
 };
 
 export default styleProperties;
