@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
     _cs,
     union,
@@ -6,6 +6,7 @@ import {
     // difference,
 } from '@togglecorp/fujs';
 
+import List from '#rsu/../v2/View/List';
 import ListView from '#rsu/../v2/View/ListView';
 import Message from '#rsu/../v2/View/Message';
 import Button from '#rsu/../v2/Action/Button';
@@ -23,7 +24,27 @@ import { conflictList, aoiInformation } from './dummy';
 
 import styles from './styles.scss';
 
-function getTagsComparision(original: Tags, prev: Tags | undefined, next: Tags | undefined) {
+interface TagStatus {
+    title: string;
+    originalValue: string | undefined;
+
+    oursDefined: boolean;
+    theirsDefined: boolean;
+
+    oursValue: string | undefined;
+    oursChanged: boolean;
+
+    theirsValue: string | undefined;
+    theirsChanged: boolean;
+
+    conflicted: boolean;
+}
+
+function getTagsComparision(
+    original: Tags,
+    prev: Tags | undefined,
+    next: Tags | undefined,
+): TagStatus[] {
     const originalKeys = new Set(Object.keys(original));
     const prevKeys = new Set(prev ? Object.keys(prev) : []);
     const nextKeys = new Set(next ? Object.keys(next) : []);
@@ -38,11 +59,14 @@ function getTagsComparision(original: Tags, prev: Tags | undefined, next: Tags |
         const oursChanged = originalValue !== oursValue;
         const theirsChanged = originalValue !== theirsValue;
 
-        const conflicted = (prev && next) && oursValue !== theirsValue;
+        const conflicted = !!prev && !!next && oursValue !== theirsValue;
 
         return {
             title: key,
             originalValue,
+
+            oursDefined: !!prev,
+            theirsDefined: !!next,
 
             oursValue,
             oursChanged,
@@ -61,6 +85,94 @@ interface Resolution {
     [key: string]: ResolveOrigin | undefined;
 }
 
+interface TagRowProps extends TagStatus {
+    oursSelected: boolean;
+    theirsSelected: boolean;
+    selected: boolean;
+    onClick: (title: string, origin: ResolveOrigin) => void;
+}
+
+const TagRow = (props: TagRowProps) => {
+    const {
+        title,
+
+        originalValue,
+        oursValue,
+        theirsValue,
+
+        oursDefined,
+        theirsDefined,
+
+        oursChanged,
+        theirsChanged,
+
+        oursSelected,
+        theirsSelected,
+
+        selected,
+        conflicted,
+
+        onClick,
+    } = props;
+
+
+    const handleTheirsClick = useCallback(
+        () => {
+            onClick(title, 'theirs');
+        },
+        [onClick, title],
+    );
+
+    const handleOursClick = useCallback(
+        () => {
+            onClick(title, 'ours');
+        },
+        [onClick, title],
+    );
+
+    return (
+        <Row
+            key={title}
+            leftClassName={styles.tagContainer}
+            left={(
+                <Tag
+                    title={title}
+                    value={originalValue}
+                    disabled
+                />
+            )}
+            centerClassName={styles.tagContainer}
+            center={
+                oursDefined && (
+                    <Tag
+                        title={title}
+                        value={oursValue}
+                        changed={oursChanged}
+                        conflicted={!selected && conflicted}
+                        selected={oursSelected}
+                        disabled={!conflicted}
+                        onClick={handleOursClick}
+                    />
+                )
+            }
+            rightClassName={styles.tagContainer}
+            right={
+                theirsDefined && (
+                    <Tag
+                        title={title}
+                        value={theirsValue}
+                        changed={theirsChanged}
+                        conflicted={!selected && conflicted}
+                        selected={theirsSelected}
+                        disabled={!conflicted}
+                        onClick={handleTheirsClick}
+                    />
+                )
+            }
+        />
+    );
+};
+
 interface State {
     activeConflictId?: string;
     showOnlyConflicts: boolean;
@@ -72,6 +184,8 @@ interface OwnProps {
 type Props = OwnProps;
 
 const conflictKeySelector = (d: ConflictElement) => d.id;
+
+const rowKeySelector = (t: TagStatus) => t.title;
 
 class ConflictResolution extends React.PureComponent<Props, State> {
     public constructor(props: Props) {
@@ -107,6 +221,14 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         console.warn('save');
     }
 
+    private handleDelete = () => {
+        console.warn('delete');
+    }
+
+    private handleKeep = () => {
+        console.warn('keep');
+    }
+
     private handleTagClick = (key: string, origin: ResolveOrigin | undefined) => {
         this.setState((state) => {
             const { resolution } = state;
@@ -126,22 +248,29 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         this.setState({ showOnlyConflicts: value });
     }
 
+    private rowRendererParams = (key: string, item: TagStatus) => {
+        const { resolution } = this.state;
+
+        const oursSelected = resolution[key] === 'ours';
+        const theirsSelected = resolution[key] === 'theirs';
+        const selected = oursSelected || theirsSelected;
+
+        return {
+            ...item,
+            onClick: this.handleTagClick,
+            oursSelected,
+            theirsSelected,
+            selected,
+        };
+    }
+
     public render() {
         const { className } = this.props;
         const { activeConflictId } = this.state;
 
-        const total = conflictList.length;
-        const resolved = conflictList.filter(c => c.resolutionStatus === 'resolved').length;
-        const partiallyResolved = conflictList.filter(c => c.resolutionStatus === 'partially-resolved').length;
-
         const activeConflict = this.getActiveConflict(conflictList, activeConflictId);
         let children = null;
         if (activeConflict) {
-            const {
-                showOnlyConflicts,
-                resolution,
-            } = this.state;
-
             const {
                 type,
                 original,
@@ -149,30 +278,28 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                 theirs,
             } = activeConflict;
 
-            const originalTagCount = Object.keys(original.tags).length;
-            const oursTagCount = Object.keys(ours?.tags || {}).length;
-            const theirsTagCount = Object.keys(theirs?.tags || {}).length;
+            const {
+                showOnlyConflicts,
+                resolution,
+            } = this.state;
 
+            // General
             const tags = getTagsComparision(
                 original.tags,
                 ours?.tags,
                 theirs?.tags,
             );
-
             const conflictedTags = tags.filter(tag => tag.conflicted);
-
             const resolvedTags = conflictedTags.filter(item => resolution[item.title]);
-
             const modifiedMode = !!ours && !!theirs;
 
+            // For map row
             const oursMapSelected = resolution.$map === 'ours';
             const theirsMapSelected = resolution.$map === 'theirs';
-
-            // NOTE: ours and theirs check for modifiedMode
             const mapConflicted = !!ours && !!theirs && ours.geoJSON !== theirs.geoJSON;
-
             const mapSelected = oursMapSelected || theirsMapSelected;
 
+            // For Info row
             let resolvedCount = resolvedTags.length;
             let conflictedCount = conflictedTags.length;
             if (mapConflicted) {
@@ -181,6 +308,11 @@ class ConflictResolution extends React.PureComponent<Props, State> {
             if (mapConflicted && mapSelected) {
                 resolvedCount += 1;
             }
+
+            // For Tag row
+            const originalTagCount = Object.keys(original.tags).length;
+            const oursTagCount = Object.keys(ours?.tags || {}).length;
+            const theirsTagCount = Object.keys(theirs?.tags || {}).length;
 
             children = (
                 <div className={styles.content}>
@@ -206,13 +338,13 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                             ) : (
                                 <>
                                     <Button
-                                        onClick={this.handleSave}
+                                        onClick={this.handleDelete}
                                         buttonType="button-primary"
                                     >
                                         Delete
                                     </Button>
                                     <Button
-                                        onClick={this.handleSave}
+                                        onClick={this.handleKeep}
                                         buttonType="button-primary"
                                     >
                                         Keep
@@ -326,78 +458,12 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                                 </h3>
                             )}
                         />
-                        {
-                            (modifiedMode && showOnlyConflicts ? conflictedTags : tags)
-                                .map((item) => {
-                                    const oursSelected = resolution[item.title] === 'ours';
-                                    const theirsSelected = resolution[item.title] === 'theirs';
-
-                                    const selected = oursSelected || theirsSelected;
-
-                                    return {
-                                        ...item,
-                                        oursSelected,
-                                        theirsSelected,
-                                        selected: oursSelected || theirsSelected,
-                                    };
-                                })
-                                .map(({
-                                    title,
-
-                                    originalValue,
-                                    oursValue,
-                                    theirsValue,
-
-                                    oursChanged,
-                                    theirsChanged,
-
-                                    oursSelected,
-                                    theirsSelected,
-
-                                    selected,
-                                    conflicted,
-                                }) => (
-                                    <Row
-                                        key={title}
-                                        leftClassName={styles.tagContainer}
-                                        left={(
-                                            <Tag
-                                                title={title}
-                                                value={originalValue}
-                                                disabled
-                                            />
-                                        )}
-                                        centerClassName={styles.tagContainer}
-                                        center={
-                                            ours && (
-                                                <Tag
-                                                    title={title}
-                                                    value={oursValue}
-                                                    changed={oursChanged}
-                                                    conflicted={!selected && conflicted}
-                                                    selected={oursSelected}
-                                                    disabled={!conflicted}
-                                                    onClick={() => this.handleTagClick(title, 'ours')}
-                                                />
-                                            )
-                                        }
-                                        rightClassName={styles.tagContainer}
-                                        right={
-                                            theirs && (
-                                                <Tag
-                                                    title={title}
-                                                    value={theirsValue}
-                                                    changed={theirsChanged}
-                                                    conflicted={!selected && conflicted}
-                                                    selected={theirsSelected}
-                                                    disabled={!conflicted}
-                                                    onClick={() => this.handleTagClick(title, 'theirs')}
-                                                />
-                                            )
-                                        }
-                                    />
-                                ))
-                        }
+                        <List
+                            data={modifiedMode && showOnlyConflicts ? conflictedTags : tags}
+                            keySelector={rowKeySelector}
+                            renderer={TagRow}
+                            rendererParams={this.rowRendererParams}
+                        />
                     </div>
                 </div>
             );
@@ -408,6 +474,10 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                 </Message>
             );
         }
+
+        const total = conflictList.length;
+        const resolved = conflictList.filter(c => c.resolutionStatus === 'resolved').length;
+        const partiallyResolved = conflictList.filter(c => c.resolutionStatus === 'partially-resolved').length;
 
         return (
             <div className={_cs(className, styles.conflictResolution)}>
