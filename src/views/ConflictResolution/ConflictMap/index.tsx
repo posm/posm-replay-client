@@ -214,6 +214,9 @@ interface State {
     selectedStyle?: StyleNames;
 }
 
+const styleLabelSelector = (item: MapStyle) => item.name;
+const styleKeySelector = (item: MapStyle) => item.name;
+
 class ConflictMap extends React.PureComponent<Props, State> {
     public static defaultProps = {
         conflicted: false,
@@ -227,6 +230,10 @@ class ConflictMap extends React.PureComponent<Props, State> {
         this.state = {
             selectedStyle: defaultSelectedStyle,
         };
+    }
+
+    private handleStyleChange = (value: StyleNames) => {
+        this.setState({ selectedStyle: value });
     }
 
     public render() {
@@ -246,10 +253,12 @@ class ConflictMap extends React.PureComponent<Props, State> {
             selectedStyle,
         } = this.state;
 
+        // FIXME: memoize creation of mapOptions
         const mapOptions = {
             bounds,
         };
 
+        // FIXME: memoize calculation of selected mapStyle
         let mapStyle = mapStyles.find(item => item.name === selectedStyle);
         if (mapStyle === undefined) {
             mapStyle = mapStyles[0];
@@ -331,11 +340,11 @@ class ConflictMap extends React.PureComponent<Props, State> {
                         className={styles.layerSwitcher}
                         showLabel={false}
                         showHintAndError={false}
-                        labelSelector={(item: MapStyle) => item.name}
-                        keySelector={(item: MapStyle) => item.name}
+                        labelSelector={styleLabelSelector}
+                        keySelector={styleKeySelector}
                         value={selectedStyle}
                         options={mapStyles}
-                        onChange={(value: StyleNames) => this.setState({ selectedStyle: value })}
+                        onChange={this.handleStyleChange}
                     />
                     {!disabled && onClick && (
                         <Button
