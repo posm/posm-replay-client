@@ -1,0 +1,38 @@
+.conflict-list-item {
+    display: block;
+    outline: none;
+    border: 0;
+    border-left: var(--width-separator-medium) solid transparent;
+    border-radius: 0;
+    background-color: transparent;
+    cursor: pointer;
+    padding: var(--spacing-small) var(--spacing-medium);
+    width: 100%;
+    text-align: left;
+    color: inherit;
+    font-family: inherit;
+
+    .icon {
+        margin-right: var(--spacing-small);
+
+        &.error {
+            color: var(--color-danger);
+        }
+        &.success {
+            color: var(--color-success);
+        }
+        &.pending {
+            color: var(--color-accent);
+        }
+    }
+
+    &:hover {
+        background-color: var(--color-background-hover);
+    }
+
+    &.active {
+        border-left-color: var(--color-accent);
+        color: var(--color-accent);
+        font-weight: var(--font-weight-bold);
+    }
+}

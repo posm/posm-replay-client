@@ -23,6 +23,10 @@ export function hasNavbar(route: SomeRoute): route is NavbarRoute {
 
 export type SomeRoute = Route | NavbarRoute | FallbackRoute;
 
+export function isNotFallbackRoute(route: SomeRoute): route is Route {
+    return route.path !== undefined;
+}
+
 const routeSettings: SomeRoute[] = [
     {
         path: '/',
@@ -32,7 +36,7 @@ const routeSettings: SomeRoute[] = [
         navbar: true,
     },
     {
-        name: 'conflict-resolution',
+        name: 'conflictResolution',
         title: 'Conflict Resolution',
         path: '/conflict-resolution/',
         load: () => import('../views/ConflictResolution'),

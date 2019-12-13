@@ -1,0 +1,19 @@
+.conflict-status {
+    display: flex;
+
+    .resolved-conflicts {
+        padding: 0 var(--spacing-extra-small);
+    }
+
+    .separator {
+        padding: 0 var(--spacing-extra-small);
+    }
+
+    .total-conflicts {
+        padding: 0 var(--spacing-extra-small);
+    }
+
+    .post-label {
+        padding: 0 var(--spacing-extra-small);
+    }
+}

@@ -1,0 +1,38 @@
+:root {
+    --height-map: 300px;
+}
+
+.conflict-map {
+    position: relative;
+    border: var(--width-seperator-thin) solid var(--color-separator);
+    border-bottom: var(--width-separator-medium) solid var(--color-separator);
+    border-radius: var(--radius-border-large);
+
+    &.conflicted {
+        border-bottom-color: var(--color-danger);
+        background-color: var(--color-foreground);
+    }
+
+    &.selected {
+        border-bottom-color: var(--color-success);
+        background-color: var(--color-foreground);
+    }
+
+    .map {
+        height: var(--height-map);
+    }
+
+    .layer-switcher {
+        position: absolute;
+        bottom: var(--spacing-small);
+        left: var(--spacing-small);
+        z-index: var(--map-elements-z-index);
+    }
+
+    .select-button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: var(--map-elements-z-index);
+    }
+}

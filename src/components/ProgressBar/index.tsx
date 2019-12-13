@@ -27,7 +27,13 @@ class ProgressBar extends React.PureComponent<Props> {
                     style={{
                         width: progressWidth,
                     }}
-                    className={_cs(styles.progress, progressClassName)}
+                    className={
+                        _cs(
+                            styles.progress,
+                            progressClassName,
+                            progress === 100 && styles.completed,
+                        )
+                    }
                 />
             </div>
         );
