@@ -2,6 +2,11 @@ import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 import memoize from 'memoize-one';
 import { navigate } from '@reach/router';
+import {
+    bboxPolygon,
+    area,
+} from '@turf/turf';
+
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
@@ -12,9 +17,20 @@ import MapBounds from '#re-map/MapBounds';
 
 import ConflictStatus from '#components/ConflictStatus';
 import TextOutput from '#components/TextOutput';
+import FormattedDate from '#rscv/FormattedDate';
+import Numeral from '#rscv/Numeral';
 import Info from '#components/Info';
+import LoadingAnimation from '#rscv/LoadingAnimation';
 import ProgressBar from '#components/ProgressBar';
 import TaskItem, { Status } from '#components/TaskItem';
+
+import {
+    createConnectedRequestCoordinator,
+    createRequestClient,
+    methods,
+    NewProps,
+    ClientAttributes,
+} from '#request';
 
 import pathNames from '#constants/pathNames';
 
@@ -31,6 +47,7 @@ enum PosmStateEnum {
     'push_conflicts',
     'pushed_upstream',
 }
+
 const isNotStarted = (state: PosmStateEnum) => state <= PosmStateEnum.not_triggered;
 const isAnalyzing = (state: PosmStateEnum) => (
     state > PosmStateEnum.not_triggered && state < PosmStateEnum.conflicts
@@ -105,14 +122,57 @@ const speed = 0.6;
 interface State {
     posmStatus: PosmStatus;
     posmStates: PosmState[];
+    alreadyLoaded: boolean;
 }
-interface Props {
+interface OwnProps {
     className?: string;
 }
+
+interface Params {
+    alreadyLoaded: boolean;
+    setFirstLoad: () => void;
+}
+
+type Props = NewProps<OwnProps, Params>;
+
+const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
+    currentAoiGet: {
+        url: '/replay-tool/',
+        method: methods.GET,
+        onMount: true,
+        onSuccess: ({
+            params,
+        }) => {
+            if (!params) {
+                return;
+            }
+
+            const {
+                alreadyLoaded,
+                setFirstLoad,
+            } = params;
+
+            if (!alreadyLoaded) {
+                setFirstLoad();
+            }
+        },
+    },
+};
 
 class Dashboard extends React.PureComponent<Props, State> {
     public constructor(props: Props) {
         super(props);
+
+        const {
+            requests: {
+                currentAoiGet,
+            },
+        } = this.props;
+
+        currentAoiGet.setDefaultParams({
+            setFirstLoad: this.setFirstLoad,
+            alreadyLoaded: false,
+        });
 
         this.state = {
             posmStatus: {
@@ -131,7 +191,12 @@ class Dashboard extends React.PureComponent<Props, State> {
                 { id: PosmStateEnum.push_conflicts, name: 'Pushing conflicts', hidden: true },
                 { id: PosmStateEnum.pushed_upstream, name: 'Pushing resolved data to OSM', hidden: true },
             ],
+            alreadyLoaded: false,
         };
+    }
+
+    private setFirstLoad = () => {
+        this.setState({ alreadyLoaded: true });
     }
 
     private handleStartButtonClick = () => {
@@ -248,23 +313,21 @@ class Dashboard extends React.PureComponent<Props, State> {
     public render() {
         const {
             className,
+            requests: {
+                currentAoiGet: {
+                    response: {
+                        aoi,
+                    } = {},
+                    pending,
+                },
+            },
         } = this.props;
+
         const {
             posmStatus,
             posmStates,
+            alreadyLoaded,
         } = this.state;
-
-        const aoi = {
-            name: 'Jawalakhel',
-            description: 'It is best known for its rich cultural heritage, particularly its tradition of arts and crafts. It is called city of festival and feast, fine ancient art, making of metallic and stone carving statue.',
-            area: 12000,
-            dateExtracted: '2019-12-02',
-            bounds: lalitpurBounds,
-            totalChangesets: 13,
-            nodes: 12121,
-            ways: 1938,
-            relations: 12,
-        };
 
         const notStartedStep = isNotStarted(posmStatus.state);
         const conflictedStep = isConflicted(posmStatus.state);
@@ -281,41 +344,53 @@ class Dashboard extends React.PureComponent<Props, State> {
         return (
             <div className={_cs(className, styles.dashboard)}>
                 <div className={styles.sidebar}>
+                    {(!alreadyLoaded || pending) && <LoadingAnimation />}
                     <header className={styles.header}>
                         <h2 className={styles.heading}>
-                            { aoi.name }
+                            { aoi?.name }
                         </h2>
                         <div
                             className={styles.description}
-                            title={aoi.description}
+                            title={aoi?.description}
                         >
-                            {aoi.description}
+                            {aoi?.description}
                         </div>
                     </header>
                     <div className={styles.details}>
                         <TextOutput
                             label="Area"
-                            value={aoi.area}
+                            value={(
+                                <Numeral
+                                    value={aoi?.bounds && (area(bboxPolygon(aoi.bounds)) / 1000000)}
+                                    precision={2}
+                                    suffix="sq. km"
+                                />
+                            )}
                         />
                         <TextOutput
-                            label="Date extracted"
-                            value={aoi.dateExtracted}
+                            label="Date cloned"
+                            value={(
+                                <FormattedDate
+                                    mode="dd-MM-yyyy"
+                                    value={aoi?.dateCloned}
+                                />
+                            )}
                         />
                         <TextOutput
                             label="Local changesets"
-                            value={aoi.totalChangesets}
+                            value={aoi?.localChangesetsCount}
                         />
                         <TextOutput
                             label="Nodes"
-                            value={aoi.nodes}
+                            value={aoi?.localElementsCount?.nodesCount}
                         />
                         <TextOutput
                             label="Ways"
-                            value={aoi.ways}
+                            value={aoi?.localElementsCount?.waysCount}
                         />
                         <TextOutput
                             label="Relations"
-                            value={aoi.relations}
+                            value={aoi?.localElementsCount?.relationsCount}
                         />
                     </div>
 
@@ -434,4 +509,6 @@ class Dashboard extends React.PureComponent<Props, State> {
     }
 }
 
-export default Dashboard;
+export default createConnectedRequestCoordinator<OwnProps>()(
+    createRequestClient(requestOptions)(Dashboard),
+);
