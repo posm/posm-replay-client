@@ -25,7 +25,7 @@ export interface Content {
 
 export interface ConflictElement {
     id: string;
-    title: string;
+    name: string;
     resolutionStatus: ResolutionStatus;
     type: ElementType; // IDK about this
 

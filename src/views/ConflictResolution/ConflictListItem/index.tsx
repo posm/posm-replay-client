@@ -9,7 +9,7 @@ import styles from './styles.scss';
 
 interface Props {
     className?: string;
-    title: string;
+    name: string;
     conflictId: string;
     onClick: (conflictId: string) => void;
     isActive: boolean;
@@ -45,7 +45,7 @@ class ConflictListItem extends React.PureComponent<Props> {
     public render() {
         const {
             className,
-            title,
+            name,
             isActive,
             resolutionStatus,
             type,
@@ -61,7 +61,7 @@ class ConflictListItem extends React.PureComponent<Props> {
                     className={_cs(styles.icon, iconClassNames[resolutionStatus])}
                     name={iconNames[resolutionStatus]}
                 />
-                {`${title} (${type})`}
+                {`${name} (${type})`}
             </button>
         );
     }

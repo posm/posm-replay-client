@@ -8,7 +8,6 @@ import {
     area,
 } from '@turf/turf';
 
-
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
 
@@ -24,6 +23,7 @@ import Info from '#components/Info';
 import LoadingAnimation from '#rscv/LoadingAnimation';
 import ProgressBar from '#components/ProgressBar';
 import TaskItem, { Status } from '#components/TaskItem';
+import { Bounds } from '#constants/types';
 
 import {
     createConnectedRequestCoordinator,
@@ -127,12 +127,10 @@ const mapStyle: mapboxgl.MapboxOptions['style'] = {
     ],
 };
 
-const speed = 0.6;
-
 interface AoiInformation {
     name: string;
     description: string;
-    bounds?: number[];
+    bounds?: Bounds;
     area: number;
     dateCloned?: string;
     localChangesetsCount?: number;
@@ -186,9 +184,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 hasErrored,
             },
             props: {
-                requests: {
-                    currentAoiGet,
-                },
+                requests: { currentAoiGet },
             },
         }) => {
             if (!params) {
@@ -202,8 +198,12 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 setAoiInformation,
             } = params;
 
-            if (!alreadyLoaded) {
+            if (!alreadyLoaded && setFirstLoad) {
                 setFirstLoad();
+            }
+
+            if (!setPosmStatus) {
+                return;
             }
 
             setPosmStatus({
@@ -212,6 +212,10 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 isCurrentStateComplete,
                 hasErrored,
             });
+
+            if (!setAoiInformation) {
+                return;
+            }
 
             setAoiInformation({
                 name,
@@ -233,8 +237,11 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
     triggerReplayTool: {
         url: '/trigger/',
         method: methods.POST,
-        onSuccess: ({ params: { setPosmStatus } }) => {
-            setPosmStatus({
+        onSuccess: ({ params }) => {
+            if (!params || !params.setPosmStatus) {
+                return;
+            }
+            params.setPosmStatus({
                 state: PosmStateEnum.gathering_changesets,
                 isCurrentStateComplete: false,
                 hasErrored: false,
@@ -244,8 +251,11 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
     retriggerReplayTool: {
         url: '/re-trigger/',
         method: methods.POST,
-        onSuccess: ({ params: { setPosmStatus } }) => {
-            setPosmStatus({
+        onSuccess: ({ params }) => {
+            if (!params || !params.setPosmStatus) {
+                return;
+            }
+            params.setPosmStatus({
                 state: PosmStateEnum.gathering_changesets,
                 isCurrentStateComplete: false,
                 hasErrored: false,
@@ -308,7 +318,7 @@ class Dashboard extends React.PureComponent<Props, State> {
         this.setState({ alreadyLoaded: true });
     }
 
-    private createMapOptions = (bounds: number[]) => {
+    private createMapOptions = memoize((bounds?: Bounds) => {
         if (!bounds) {
             return {};
         }
@@ -317,7 +327,7 @@ class Dashboard extends React.PureComponent<Props, State> {
             zoomLevel: 3,
             center: center(bboxPolygon(bounds)),
         };
-    }
+    });
 
     private setAoiInformation = (aoiInformation: AoiInformation) => {
         this.setState({ aoiInformation });
@@ -329,18 +339,14 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     private handleStartButtonClick = () => {
         const {
-            requests: {
-                triggerReplayTool,
-            },
+            requests: { triggerReplayTool },
         } = this.props;
         triggerReplayTool.do({ setPosmStatus: this.setPosmStatus });
     }
 
     private handleRetryButtonClick = () => {
         const {
-            requests: {
-                retriggerReplayTool,
-            },
+            requests: { retriggerReplayTool },
         } = this.props;
         retriggerReplayTool.do({ setPosmStatus: this.setPosmStatus });
     }
@@ -395,7 +401,6 @@ class Dashboard extends React.PureComponent<Props, State> {
         }
 
         return {
-            className: styles.tasksItem,
             status: stateStatus,
             label: value.name,
         };
@@ -405,14 +410,24 @@ class Dashboard extends React.PureComponent<Props, State> {
         const {
             className,
             requests: {
-                currentAoiGet: {
-                    pending,
-                },
+                currentAoiGet: { pending },
             },
         } = this.props;
 
         const {
-            aoiInformation,
+            aoiInformation: {
+                bounds,
+                totalResolvedElements,
+                totalConflictingElements,
+                name,
+                description,
+                area: aoiArea,
+                dateCloned,
+                localChangesetsCount,
+                nodesCount,
+                waysCount,
+                relationsCount,
+            },
             posmStatus,
             posmStates,
             alreadyLoaded,
@@ -422,15 +437,13 @@ class Dashboard extends React.PureComponent<Props, State> {
         const conflictedStep = isConflicted(posmStatus.state);
         const analyzing = isAnalyzing(posmStatus.state);
         const resolvedStep = isResolved(posmStatus.state);
-        const mapOptions = this.createMapOptions(aoiInformation.bounds);
+        const mapOptions = this.createMapOptions(bounds);
 
-        const conflict = {
-            resolvedCount: aoiInformation.totalResolvedElements,
-            totalCount: aoiInformation.totalConflictingElements,
-        };
-
-        const conflictProgress = 100 * (conflict.resolvedCount / conflict.totalCount);
-        const resolveDisabled = conflict.totalCount !== conflict.resolvedCount;
+        let conflictProgress = 0;
+        if (totalResolvedElements && totalConflictingElements) {
+            conflictProgress = 100 * (totalResolvedElements / totalConflictingElements);
+        }
+        const resolveDisabled = totalConflictingElements !== totalResolvedElements;
 
         return (
             <div className={_cs(className, styles.dashboard)}>
@@ -438,13 +451,13 @@ class Dashboard extends React.PureComponent<Props, State> {
                     {(!alreadyLoaded && pending) && <LoadingAnimation />}
                     <header className={styles.header}>
                         <h2 className={styles.heading}>
-                            { aoiInformation.name }
+                            { name }
                         </h2>
                         <div
                             className={styles.description}
-                            title={aoiInformation.description}
+                            title={description}
                         >
-                            {aoiInformation.description}
+                            {description}
                         </div>
                     </header>
                     <div className={styles.details}>
@@ -452,7 +465,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                             label="Area"
                             value={(
                                 <Numeral
-                                    value={aoiInformation.area}
+                                    value={aoiArea}
                                     precision={2}
                                     suffix=" sq. km"
                                 />
@@ -463,25 +476,25 @@ class Dashboard extends React.PureComponent<Props, State> {
                             value={(
                                 <FormattedDate
                                     mode="dd-MM-yyyy"
-                                    value={aoiInformation.dateCloned}
+                                    value={dateCloned}
                                 />
                             )}
                         />
                         <TextOutput
                             label="Local changesets"
-                            value={aoiInformation.localChangesetsCount}
+                            value={localChangesetsCount}
                         />
                         <TextOutput
                             label="Nodes"
-                            value={aoiInformation.nodesCount}
+                            value={nodesCount}
                         />
                         <TextOutput
                             label="Ways"
-                            value={aoiInformation.waysCount}
+                            value={waysCount}
                         />
                         <TextOutput
                             label="Relations"
-                            value={aoiInformation.relationsCount}
+                            value={relationsCount}
                         />
                     </div>
 
@@ -548,8 +561,8 @@ class Dashboard extends React.PureComponent<Props, State> {
                             />
                             <ConflictStatus
                                 className={styles.conflictStatus}
-                                total={conflict.totalCount}
-                                resolved={conflict.resolvedCount}
+                                total={totalConflictingElements}
+                                resolved={totalResolvedElements}
                             />
                             <div className={styles.actions}>
                                 <Button
@@ -590,7 +603,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     navControlShown
                 >
                     <MapBounds
-                        bounds={aoiInformation.bounds}
+                        bounds={bounds}
                         padding={50}
                     />
                     <MapContainer
