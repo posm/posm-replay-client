@@ -127,11 +127,17 @@ const mapStyle: mapboxgl.MapboxOptions['style'] = {
     ],
 };
 
+interface LocalElementsCount {
+    waysCount: number;
+    nodesCount: number;
+    relationsCount: number;
+}
+
 interface AoiInformation {
     name: string;
     description: string;
     bounds?: Bounds;
-    area: number;
+    area?: number;
     dateCloned?: string;
     localChangesetsCount?: number;
     nodesCount?: number;
@@ -139,6 +145,7 @@ interface AoiInformation {
     relationsCount?: number;
     totalResolvedElements?: number;
     totalConflictingElements?: number;
+    localElementsCount?: LocalElementsCount;
 }
 
 interface State {
@@ -159,6 +166,13 @@ interface Params {
     setAoiInformation?: (aoiInformation: AoiInformation) => void;
 }
 
+interface Response {
+    aoi: AoiInformation;
+    state: PosmStateEnum;
+    isCurrentStateComplete: boolean;
+    hasErrored: boolean;
+}
+
 type Props = NewProps<OwnProps, Params>;
 
 const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
@@ -168,7 +182,15 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
         onMount: true,
         onSuccess: ({
             params,
-            response: {
+            response,
+            props: {
+                requests: { currentAoiGet },
+            },
+        }) => {
+            if (!params) {
+                return;
+            }
+            const {
                 aoi: {
                     name,
                     description,
@@ -178,18 +200,11 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                     localElementsCount,
                     totalConflictingElements,
                     totalResolvedElements,
-                } = {},
+                },
                 state,
                 isCurrentStateComplete,
                 hasErrored,
-            },
-            props: {
-                requests: { currentAoiGet },
-            },
-        }) => {
-            if (!params) {
-                return;
-            }
+            } = response as Response;
 
             const {
                 alreadyLoaded,
@@ -380,7 +395,7 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     private taskItemKeySelector = (item: PosmState) => item.id;
 
-    private taskItemRendererParams = (key: PosmStateEnum, value: PosmState) => {
+    private taskItemRendererParams = (_: PosmStateEnum, value: PosmState) => {
         const {
             posmStatus: {
                 state,

@@ -7,13 +7,15 @@ import {
 import {
     buffer,
     bbox,
+    Feature,
+    Geometry,
+    FeatureCollection,
 } from '@turf/turf';
 
 import List from '#rsu/../v2/View/List';
 import Message from '#rsu/../v2/View/Message';
 import Button from '#rsu/../v2/Action/Button';
 import Checkbox from '#rsu/../v2/Input/Checkbox';
-import { Tags } from '#constants/types';
 import ProgressBar from '#components/ProgressBar';
 import ConflictStatus from '#components/ConflictStatus';
 
@@ -24,6 +26,11 @@ import {
     NewProps,
     ClientAttributes,
 } from '#request';
+
+import {
+    Tags,
+    ConflictElement,
+} from '#constants/types';
 
 import Row from '../Row';
 import TagRow from '../TagRow';
@@ -78,11 +85,6 @@ interface Resolution {
     [key: string]: string;
 }
 
-interface TagKeyValue {
-    k: string;
-    v: string;
-}
-
 interface OwnProps {
     className?: string;
     activeConflictId?: number;
@@ -96,9 +98,13 @@ interface State {
 const rowKeySelector = (t: TagStatus) => t.title;
 
 interface Params {
+    resolution?: object;
     setResolution?: (resolvedData: object) => void;
 }
 
+interface Response {
+    resolvedData: object;
+}
 type Props = NewProps<OwnProps, Params>;
 
 const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
@@ -115,19 +121,20 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             }
             const { setResolution } = params;
             if (setResolution) {
-                setResolution(response.resolvedData);
+                const { resolvedData } = response as Response;
+                setResolution(resolvedData);
             }
         },
     },
     conflictUpdate: {
         url: ({ props: { activeConflictId } }) => `/conflicts/${activeConflictId}/update/`,
         method: methods.PATCH,
-        body: ({ params: { resolution } }) => resolution,
+        body: ({ params }) => params && params.resolution,
         onMount: false,
     },
 };
 
-const getBounds = (geoJson) => {
+const getBounds = (geoJson: (Feature<any> | FeatureCollection | Geometry)) => {
     const shape = buffer(geoJson, 0.5, { units: 'kilometers' });
     return bbox(shape);
 };
@@ -150,7 +157,7 @@ class Conflict extends React.PureComponent<Props, State> {
         };
     }
 
-    private getActiveConflict = conflict => ({
+    private getActiveConflict = (conflict: ConflictElement) => ({
         type: conflict.type === 'node' ? 'point' : conflict.type,
         id: conflict.elementId,
         original: {
@@ -186,7 +193,7 @@ class Conflict extends React.PureComponent<Props, State> {
         this.setState({ showOnlyConflicts: value });
     }
 
-    private setResolution = (resolvedData) => {
+    private setResolution = (resolvedData: object) => {
         this.setState({
             resolution: resolvedData.tags,
         });
@@ -224,7 +231,7 @@ class Conflict extends React.PureComponent<Props, State> {
         console.warn('keep');
     }
 
-    private handleTagClick = (key: string, origin: ResolveOrigin | undefined, value?: string) => {
+    private handleTagClick = (key: string, _: ResolveOrigin | undefined, value?: string) => {
         this.setState((state) => {
             const { resolution } = state;
             const newResolution = {
@@ -270,7 +277,7 @@ class Conflict extends React.PureComponent<Props, State> {
             );
         }
 
-        const activeConflict = this.getActiveConflict(response);
+        const activeConflict = this.getActiveConflict(response as ConflictElement);
 
         const {
             type,

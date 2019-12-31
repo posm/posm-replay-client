@@ -21,6 +21,8 @@ import { conflictList } from './dummy';
 import styles from './styles.scss';
 
 interface State {
+    conflicts: ConflictElement[];
+    aoiInformation: AoiInformation;
     activeConflictId?: number;
 }
 interface OwnProps {
@@ -46,12 +48,16 @@ interface Params {
     setAoiInformation?: (aoiInformation: AoiInformation) => void;
 }
 
+interface Response {
+    aoi: AoiInformation;
+}
+
 const defaultAoi = {
     name: '-',
     description: '-',
 };
 
-const conflictKeySelector = (d: ConflictElement) => d.id;
+const conflictKeySelector = (d: ConflictElement) => d.id.toString();
 
 const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
     currentAoiGet: {
@@ -60,13 +66,12 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
         onMount: true,
         onSuccess: ({
             params,
-            response: {
-                aoi = defaultAoi,
-            },
+            response,
         }) => {
             if (!params || !params.setAoiInformation) {
                 return;
             }
+            const { aoi = defaultAoi } = response as Response;
             const {
                 name,
                 description,
@@ -130,7 +135,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         resolutionStatus: conflict.resolutionStatus,
     });
 
-    private setAoiInformation = (aoiInformation) => {
+    private setAoiInformation = (aoiInformation: AoiInformation) => {
         this.setState({ aoiInformation });
     }
 
@@ -138,7 +143,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         this.setState({ conflicts });
     }
 
-    private handleConflictListItemClick = (conflictId: string) => {
+    private handleConflictListItemClick = (conflictId: number) => {
         this.setState({ activeConflictId: conflictId });
     }
 

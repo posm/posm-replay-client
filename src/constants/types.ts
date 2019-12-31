@@ -1,5 +1,6 @@
+import { Feature, FeatureCollection, Geometry } from '@turf/turf';
 export type ResolutionStatus = 'conflicted' | 'resolved' | 'partially-resolved';
-export type ElementType = 'point' | 'line' | 'area';
+export type ElementType = 'point' | 'line' | 'area' | 'node';
 export type Bounds = [number, number, number, number];
 
 interface Meta {
@@ -24,14 +25,18 @@ export interface Content {
 }
 
 export interface ConflictElement {
-    id: string;
+    id: number;
     name: string;
+    elementId: number;
     resolutionStatus: ResolutionStatus;
     type: ElementType; // IDK about this
 
     original: Content;
     theirs?: Content;
     ours?: Content;
+    originalGeojson: object;
+    localGeojson: object;
+    upstreamGeojson: object;
 }
 
 // For nodes:
