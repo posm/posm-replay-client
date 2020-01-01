@@ -90,9 +90,9 @@ export function createConnectedRequestCoordinator<OwnProps>() {
         },
 
         transformErrors: (response: Error) => {
-            // eslint-disable-next-line
+            // eslint-disable-next-line @typescript-eslint/camelcase
             const { non_field_errors, ...faramErrors } = response.errors || {};
-            // eslint-disable-next-line
+            // eslint-disable-next-line @typescript-eslint/camelcase
             const nonFieldErrors = non_field_errors ? non_field_errors.join(' ') : undefined;
 
             return {

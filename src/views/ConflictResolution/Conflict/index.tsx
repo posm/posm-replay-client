@@ -7,15 +7,13 @@ import {
 import {
     buffer,
     bbox,
-    Feature,
-    Geometry,
-    FeatureCollection,
 } from '@turf/turf';
 
 import List from '#rsu/../v2/View/List';
 import Message from '#rsu/../v2/View/Message';
 import Button from '#rsu/../v2/Action/Button';
 import Checkbox from '#rsu/../v2/Input/Checkbox';
+
 import ProgressBar from '#components/ProgressBar';
 import ConflictStatus from '#components/ConflictStatus';
 
@@ -30,6 +28,8 @@ import {
 import {
     Tags,
     ConflictElement,
+    Bounds,
+    ElementGeoJSON,
 } from '#constants/types';
 
 import Row from '../Row';
@@ -43,10 +43,13 @@ import {
 import styles from './styles.scss';
 
 function getTagsComparision(
-    original: Tags,
+    original: Tags | undefined,
     prev: Tags | undefined,
     next: Tags | undefined,
 ): TagStatus[] {
+    if (!original) {
+        return [];
+    }
     const originalKeys = new Set(Object.keys(original));
     const prevKeys = new Set(prev ? Object.keys(prev) : []);
     const nextKeys = new Set(next ? Object.keys(next) : []);
@@ -82,7 +85,7 @@ function getTagsComparision(
 }
 
 interface Resolution {
-    [key: string]: string;
+    [key: string]: string | undefined;
 }
 
 interface OwnProps {
@@ -121,7 +124,8 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             }
             const { setResolution } = params;
             if (setResolution) {
-                const { resolvedData } = response as Response;
+                const myResponse = response as Response;
+                const { resolvedData } = myResponse;
                 setResolution(resolvedData);
             }
         },
@@ -134,9 +138,10 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
     },
 };
 
-const getBounds = (geoJson: (Feature<any> | FeatureCollection | Geometry)) => {
+const getBounds = (geoJson: ElementGeoJSON) => {
     const shape = buffer(geoJson, 0.5, { units: 'kilometers' });
-    return bbox(shape);
+    // NOTE: bbox also support 3d bbox
+    return bbox(shape) as Bounds;
 };
 
 class Conflict extends React.PureComponent<Props, State> {
@@ -159,6 +164,7 @@ class Conflict extends React.PureComponent<Props, State> {
 
     private getActiveConflict = (conflict: ConflictElement) => ({
         type: conflict.type === 'node' ? 'point' : conflict.type,
+        name: conflict.name,
         id: conflict.elementId,
         original: {
             geoJSON: conflict.originalGeojson,
@@ -215,8 +221,6 @@ class Conflict extends React.PureComponent<Props, State> {
                 tags: resolution,
             },
         });
-
-        // conflictUpdate.do({ });
     }
 
     private handleSave = () => {
@@ -306,8 +310,8 @@ class Conflict extends React.PureComponent<Props, State> {
         const oursMapSelected = resolution.$map === 'ours';
         const theirsMapSelected = resolution.$map === 'theirs';
         const mapConflicted = !!ours
-        && !!theirs
-        && JSON.stringify(ours.geoJSON?.geometry) !== JSON.stringify(theirs.geoJSON?.geometry);
+            && !!theirs
+            && JSON.stringify(ours.geoJSON?.geometry) !== JSON.stringify(theirs.geoJSON?.geometry);
         const mapSelected = oursMapSelected || theirsMapSelected;
 
         // For Info row
@@ -321,7 +325,7 @@ class Conflict extends React.PureComponent<Props, State> {
         }
 
         // For Tag row
-        const originalTagCount = Object.keys(original.tags).length;
+        const originalTagCount = Object.keys(original.tags || {}).length;
         const oursTagCount = Object.keys(ours?.tags || {}).length;
         const theirsTagCount = Object.keys(theirs?.tags || {}).length;
 
@@ -329,7 +333,7 @@ class Conflict extends React.PureComponent<Props, State> {
             <div className={_cs(styles.content, className)}>
                 <div className={styles.headerContainer}>
                     <h1 className={styles.title}>
-                        { activeConflict.title }
+                        { activeConflict.name }
                     </h1>
                     <div className={styles.actions}>
                         {modifiedMode ? (

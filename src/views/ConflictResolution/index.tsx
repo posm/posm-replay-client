@@ -16,7 +16,6 @@ import {
 
 import ConflictListItem from './ConflictListItem';
 import Conflict from './Conflict';
-import { conflictList } from './dummy';
 
 import styles from './styles.scss';
 
@@ -75,7 +74,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             const {
                 name,
                 description,
-            } = aoi as AoiInformation;
+            } = aoi;
 
             const { setAoiInformation } = params;
 
@@ -90,13 +89,17 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
         method: methods.GET,
         onMount: true,
         onSuccess: ({
-            params: { setConflicts },
-            response: { results },
+            params,
+            response,
         }) => {
-            if (!results) {
-                setConflicts([]);
+            if (!params || !params.setConflicts) {
+                return;
             }
-            setConflicts(results);
+            const { results } = response;
+            if (!results) {
+                params.setConflicts([]);
+            }
+            params.setConflicts(results);
         },
     },
 };
@@ -119,10 +122,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         this.state = {
             conflicts: [],
             activeConflictId: undefined,
-            aoiInformation: {
-                name: '-',
-                description: '-',
-            },
+            aoiInformation: defaultAoi,
         };
     }
 
@@ -156,9 +156,9 @@ class ConflictResolution extends React.PureComponent<Props, State> {
             conflicts,
         } = this.state;
 
-        const total = conflictList.length;
-        const resolved = conflictList.filter(c => c.resolutionStatus === 'resolved').length;
-        const partiallyResolved = conflictList.filter(c => c.resolutionStatus === 'partially-resolved').length;
+        const total = conflicts.length;
+        const resolved = conflicts.filter(c => c.resolutionStatus === 'resolved').length;
+        const partiallyResolved = conflicts.filter(c => c.resolutionStatus === 'partially-resolved').length;
 
         return (
             <div className={_cs(className, styles.conflictResolution)}>

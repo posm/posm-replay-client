@@ -3,7 +3,7 @@ import { _cs } from '@togglecorp/fujs';
 import memoize from 'memoize-one';
 import { navigate } from '@reach/router';
 import {
-    center,
+    // center,
     bboxPolygon,
     area,
 } from '@turf/turf';
@@ -337,10 +337,12 @@ class Dashboard extends React.PureComponent<Props, State> {
         if (!bounds) {
             return {};
         }
+        // const centerPoint = center(bboxPolygon(bounds));
         return {
             bounds,
             zoomLevel: 3,
-            center: center(bboxPolygon(bounds)),
+            // NOTE: we may not need center if we have bounds
+            // center: centerPoint,
         };
     });
 

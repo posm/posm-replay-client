@@ -10,7 +10,7 @@ import MapBounds from '#re-map/MapBounds';
 import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
 
-import { Content, ElementType, Bounds } from '#constants/types';
+import { ElementGeoJSON, ElementType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
 
@@ -201,7 +201,7 @@ interface Props {
     mapClassName?: string;
     type: ElementType;
     bounds: Bounds;
-    geoJSON: Content['geoJSON'];
+    geoJSON: ElementGeoJSON;
     defaultSelectedStyle?: StyleNames;
     onClick?: () => void;
 
@@ -261,7 +261,7 @@ class ConflictMap extends React.PureComponent<Props, State> {
         // FIXME: memoize calculation of selected mapStyle
         let mapStyle = mapStyles.find(item => item.name === selectedStyle);
         if (mapStyle === undefined) {
-            mapStyle = mapStyles[0];
+            [mapStyle] = mapStyles;
         }
 
         return (
@@ -291,7 +291,7 @@ class ConflictMap extends React.PureComponent<Props, State> {
                     {geoJSON && type === 'area' && (
                         <MapSource
                             sourceKey="area"
-                            geoJSON={geoJSON}
+                            geoJson={geoJSON}
                             sourceOptions={sourceOptions}
                         >
                             <MapLayer
@@ -311,7 +311,7 @@ class ConflictMap extends React.PureComponent<Props, State> {
                     {geoJSON && type === 'line' && (
                         <MapSource
                             sourceKey="line"
-                            geoJSON={geoJSON}
+                            geoJson={geoJSON}
                             sourceOptions={sourceOptions}
                         >
                             <MapLayer
@@ -327,7 +327,7 @@ class ConflictMap extends React.PureComponent<Props, State> {
                     {geoJSON && type === 'point' && (
                         <MapSource
                             sourceKey="point"
-                            geoJSON={geoJSON}
+                            geoJson={geoJSON}
                             sourceOptions={sourceOptions}
                         >
                             <MapLayer

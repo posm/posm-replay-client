@@ -10,8 +10,8 @@ import styles from './styles.scss';
 interface Props {
     className?: string;
     name: string;
-    conflictId: string;
-    onClick: (conflictId: string) => void;
+    conflictId: number;
+    onClick: (conflictId: number) => void;
     isActive: boolean;
     resolutionStatus: ResolutionStatus;
     type: ElementType;

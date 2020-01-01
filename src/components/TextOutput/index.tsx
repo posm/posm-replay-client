@@ -6,7 +6,7 @@ import styles from './styles.scss';
 interface Props {
     className?: string;
     label: string;
-    value?: React.ReactNode;
+    value: React.ReactNode;
     labelClassName?: string;
     valueClassName?: string;
     // valueType: 'string|number|date';
