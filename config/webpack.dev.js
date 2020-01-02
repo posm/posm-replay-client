@@ -83,6 +83,7 @@ module.exports = (env) => {
             host: '0.0.0.0',
             port: 3050,
             overlay: true,
+            disableHostCheck: true,
             watchOptions: {
                 ignored: /node_modules/,
             },

@@ -157,6 +157,7 @@
         "localforage": "^1.7.3",
         "mapbox-gl": "^1.5.1",
         "memoize-one": "^5.0.5",
+        "osm-auth": "^1.0.2",
         "prop-types": "^15.7.2",
         "react": "16.8.6",
         "react-color": "^2.17.3",
