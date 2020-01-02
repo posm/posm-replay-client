@@ -7,6 +7,7 @@ import {
     bboxPolygon,
     area,
 } from '@turf/turf';
+import { authenticate } from '#utils/oauth';
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
@@ -333,6 +334,10 @@ class Dashboard extends React.PureComponent<Props, State> {
         this.setState({ alreadyLoaded: true });
     }
 
+    private handlePushToUpstreamButton = () => {
+        authenticate();
+    }
+
     private createMapOptions = memoize((bounds?: Bounds) => {
         if (!bounds) {
             return {};
@@ -378,10 +383,6 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     private handleResolveConflictButtonClick = () => {
         navigate(pathNames.conflictResolution);
-    }
-
-    private handlePushToUpstreamButton = () => {
-        console.log('Push to upstream');
     }
 
     private getVisiblePosmStates = memoize((posmStates: PosmState[]) => (
