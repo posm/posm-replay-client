@@ -4,7 +4,7 @@ import { _cs } from '@togglecorp/fujs';
 import ListView from '#rsu/../v2/View/ListView';
 import ProgressBar from '#components/ProgressBar';
 import ConflictStatus from '#components/ConflictStatus';
-import { ConflictElement, Bounds } from '#constants/types';
+import { BasicConflictElement, Bounds } from '#constants/types';
 
 import {
     createConnectedRequestCoordinator,
@@ -20,7 +20,7 @@ import Conflict from './Conflict';
 import styles from './styles.scss';
 
 interface State {
-    conflicts: ConflictElement[];
+    conflicts: BasicConflictElement[];
     aoiInformation: AoiInformation;
     activeConflictId?: number;
 }
@@ -43,7 +43,7 @@ interface AoiInformation {
 }
 
 interface Params {
-    setConflicts?: (conflicts: ConflictElement[]) => void;
+    setConflicts?: (conflicts: BasicConflictElement[]) => void;
     setAoiInformation?: (aoiInformation: AoiInformation) => void;
 }
 
@@ -56,7 +56,7 @@ const defaultAoi = {
     description: '-',
 };
 
-const conflictKeySelector = (d: ConflictElement) => d.id.toString();
+const conflictKeySelector = (d: BasicConflictElement) => d.id.toString();
 
 const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
     currentAoiGet: {
@@ -95,7 +95,9 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             if (!params || !params.setConflicts) {
                 return;
             }
-            const { results } = response;
+            const { results } = response as {
+                results: BasicConflictElement[];
+            };
             if (!results) {
                 params.setConflicts([]);
             }
@@ -126,20 +128,20 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         };
     }
 
-    private getConflictListItemRendererParams = (_: string, conflict: ConflictElement) => ({
+    private getConflictListItemRendererParams = (_: string, conflict: BasicConflictElement) => ({
         conflictId: conflict.id,
         name: conflict.name,
         onClick: this.handleConflictListItemClick,
         isActive: this.state.activeConflictId === conflict.id,
         type: conflict.type,
-        resolutionStatus: conflict.resolutionStatus,
+        status: conflict.status,
     });
 
     private setAoiInformation = (aoiInformation: AoiInformation) => {
         this.setState({ aoiInformation });
     }
 
-    private setConflicts = (conflicts: ConflictElement[]) => {
+    private setConflicts = (conflicts: BasicConflictElement[]) => {
         this.setState({ conflicts });
     }
 
@@ -157,8 +159,8 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         } = this.state;
 
         const total = conflicts.length;
-        const resolved = conflicts.filter(c => c.resolutionStatus === 'resolved').length;
-        const partiallyResolved = conflicts.filter(c => c.resolutionStatus === 'partially-resolved').length;
+        const resolved = conflicts.filter(c => c.status === 'resolved').length;
+        const partiallyResolved = conflicts.filter(c => c.status === 'partially_resolved').length;
 
         return (
             <div className={_cs(className, styles.conflictResolution)}>

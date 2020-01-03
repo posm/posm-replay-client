@@ -10,7 +10,7 @@ import MapBounds from '#re-map/MapBounds';
 import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
 
-import { ElementGeoJSON, ElementType, Bounds } from '#constants/types';
+import { ElementGeoJSON, ShapeType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
 
@@ -199,7 +199,7 @@ const pointLayerOptions: mapboxgl.Layer = {
 interface Props {
     className?: string;
     mapClassName?: string;
-    type: ElementType;
+    type: ShapeType;
     bounds: Bounds;
     geoJSON: ElementGeoJSON;
     defaultSelectedStyle?: StyleNames;

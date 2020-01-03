@@ -1,13 +1,16 @@
-import { Feature, FeatureCollection, Geometry } from '@turf/turf';
+import { Feature, Geometry } from '@turf/turf';
 
-export type ResolutionStatus = 'conflicted' | 'resolved' | 'partially-resolved';
-export type ElementType = 'point' | 'line' | 'area' | 'node';
+export type ResolutionStatus = 'unresolved' | 'resolved' | 'partially_resolved';
+export type ElementType = 'node' | 'way' | 'relation';
+export type ShapeType = 'point' | 'line' | 'area';
 export type Bounds = [number, number, number, number];
 
 interface ElementProperties {
     id: number;
     version: number;
     tags: Tags;
+    location?: unknown;
+    conflictingNodes?: unknown;
 }
 
 export type ElementGeoJSON = GeoJSON.Feature<GeoJSON.Geometry, ElementProperties>;
@@ -36,18 +39,15 @@ export interface Content {
 }
 */
 
-export interface ConflictElement {
+export interface BasicConflictElement {
+    elementId: number;
     id: number;
     name: string;
-    elementId: number;
-    resolutionStatus: ResolutionStatus;
     type: ElementType; // IDK about this
+    status: ResolutionStatus;
+}
 
-    // NOTE: are these used?
-    // original: Content;
-    // theirs?: Content;
-    // ours?: Content;
-
+export interface ConflictElement extends BasicConflictElement {
     originalGeojson: ElementGeoJSON;
     localGeojson: ElementGeoJSON;
     upstreamGeojson: ElementGeoJSON;

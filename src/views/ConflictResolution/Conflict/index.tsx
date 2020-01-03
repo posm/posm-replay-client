@@ -3,14 +3,17 @@ import {
     _cs,
     union,
     isDefined,
+    listToMap,
 } from '@togglecorp/fujs';
 import {
     buffer,
     bbox,
 } from '@turf/turf';
+import memoize from 'memoize-one';
 
 import List from '#rsu/../v2/View/List';
 import Message from '#rsu/../v2/View/Message';
+import LoadingAnimation from '#rscv/LoadingAnimation';
 import Button from '#rsu/../v2/Action/Button';
 import Checkbox from '#rsu/../v2/Input/Checkbox';
 
@@ -30,6 +33,7 @@ import {
     ConflictElement,
     Bounds,
     ElementGeoJSON,
+    ShapeType,
 } from '#constants/types';
 
 import Row from '../Row';
@@ -42,50 +46,8 @@ import {
 
 import styles from './styles.scss';
 
-function getTagsComparision(
-    original: Tags | undefined,
-    prev: Tags | undefined,
-    next: Tags | undefined,
-): TagStatus[] {
-    if (!original) {
-        return [];
-    }
-    const originalKeys = new Set(Object.keys(original));
-    const prevKeys = new Set(prev ? Object.keys(prev) : []);
-    const nextKeys = new Set(next ? Object.keys(next) : []);
-
-    const allKeys = union(originalKeys, union(prevKeys, nextKeys));
-
-    return [...allKeys].sort().map((key) => {
-        const originalValue = original[key];
-        const oursValue = prev ? prev[key] : undefined;
-        const theirsValue = next ? next[key] : undefined;
-
-        const oursChanged = originalValue !== oursValue;
-        const theirsChanged = originalValue !== theirsValue;
-
-        const conflicted = !!prev && !!next && oursValue !== theirsValue;
-
-        return {
-            title: key,
-            originalValue,
-
-            oursDefined: !!prev,
-            theirsDefined: !!next,
-
-            oursValue,
-            oursChanged,
-
-            theirsValue,
-            theirsChanged,
-
-            conflicted,
-        };
-    });
-}
-
 interface Resolution {
-    [key: string]: string | undefined;
+    [key: string]: 'ours' | 'theirs' | undefined;
 }
 
 interface OwnProps {
@@ -101,7 +63,10 @@ interface State {
 const rowKeySelector = (t: TagStatus) => t.title;
 
 interface Params {
-    resolution?: object;
+    tags?: unknown;
+    location?: unknown;
+    conflictingNodes?: unknown;
+
     setResolution?: (resolvedData: object) => void;
 }
 
@@ -126,14 +91,29 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             if (setResolution) {
                 const myResponse = response as Response;
                 const { resolvedData } = myResponse;
-                setResolution(resolvedData);
+                // FIXME: we don't do this here
+                // setResolution(resolvedData);
             }
         },
     },
     conflictUpdate: {
         url: ({ props: { activeConflictId } }) => `/conflicts/${activeConflictId}/update/`,
         method: methods.PATCH,
-        body: ({ params }) => params && params.resolution,
+        body: ({ params }) => params && ({
+            tags: params.tags,
+            location: params.location,
+            conflictingNodes: params.conflictingNodes,
+        }),
+        onMount: false,
+    },
+    conflictResolve: {
+        url: ({ props: { activeConflictId } }) => `/conflicts/${activeConflictId}/resolve/`,
+        method: methods.PATCH,
+        body: ({ params }) => params && ({
+            tags: params.tags,
+            location: params.location,
+            conflictingNodes: params.conflictingNodes,
+        }),
         onMount: false,
     },
 };
@@ -143,6 +123,21 @@ const getBounds = (geoJson: ElementGeoJSON) => {
     // NOTE: bbox also support 3d bbox
     return bbox(shape) as Bounds;
 };
+
+function getShapeType(geoJson: ElementGeoJSON): ShapeType {
+    const { geometry: { type } } = geoJson;
+    if (type === 'Point' || type === 'MultiPoint') {
+        return 'point';
+    }
+    if (type === 'LineString' || type === 'MultiLineString') {
+        return 'line';
+    }
+    if (type === 'Polygon' || type === 'MultiPolygon') {
+        return 'area';
+    }
+
+    return 'point';
+}
 
 class Conflict extends React.PureComponent<Props, State> {
     public constructor(props: Props) {
@@ -162,8 +157,8 @@ class Conflict extends React.PureComponent<Props, State> {
         };
     }
 
-    private getActiveConflict = (conflict: ConflictElement) => ({
-        type: conflict.type === 'node' ? 'point' : conflict.type,
+    private getActiveConflict = memoize((conflict: ConflictElement) => ({
+        type: getShapeType(conflict.originalGeojson),
         name: conflict.name,
         id: conflict.elementId,
         original: {
@@ -174,6 +169,8 @@ class Conflict extends React.PureComponent<Props, State> {
                 version: conflict.originalGeojson.properties.version,
             },
             tags: conflict.originalGeojson.properties.tags,
+            location: conflict.originalGeojson.properties.location,
+            conflictingNodes: conflict.originalGeojson.properties.conflictingNodes,
         },
         ours: {
             geoJSON: conflict.localGeojson,
@@ -183,6 +180,8 @@ class Conflict extends React.PureComponent<Props, State> {
                 version: conflict.localGeojson.properties.version,
             },
             tags: conflict.localGeojson.properties.tags,
+            location: conflict.localGeojson.properties.location,
+            conflictingNodes: conflict.localGeojson.properties.conflictingNodes,
         },
         theirs: {
             geoJSON: conflict.upstreamGeojson,
@@ -192,8 +191,114 @@ class Conflict extends React.PureComponent<Props, State> {
                 version: conflict.upstreamGeojson.properties.version,
             },
             tags: conflict.upstreamGeojson.properties.tags,
+            location: conflict.upstreamGeojson.properties.location,
+            conflictingNodes: conflict.upstreamGeojson.properties.conflictingNodes,
         },
-    });
+    }));
+
+    private getTagsComparision = memoize((
+        original: Tags | undefined,
+        prev: Tags | undefined,
+        next: Tags | undefined,
+    ): TagStatus[] => {
+        if (!original) {
+            return [];
+        }
+        const originalKeys = new Set(Object.keys(original));
+        const prevKeys = new Set(prev ? Object.keys(prev) : []);
+        const nextKeys = new Set(next ? Object.keys(next) : []);
+
+        const allKeys = union(originalKeys, union(prevKeys, nextKeys));
+
+        return [...allKeys].sort().map((key) => {
+            const originalValue = original[key];
+            const oursValue = prev ? prev[key] : undefined;
+            const theirsValue = next ? next[key] : undefined;
+
+            const oursChanged = originalValue !== oursValue;
+            const theirsChanged = originalValue !== theirsValue;
+
+            const conflicted = !!prev && !!next && oursValue !== theirsValue;
+
+            return {
+                title: key,
+                originalValue,
+
+                oursDefined: !!prev,
+                theirsDefined: !!next,
+
+                oursValue,
+                oursChanged,
+
+                theirsValue,
+                theirsChanged,
+
+                conflicted,
+            };
+        });
+    })
+
+    private getVariousData = memoize((conflictElement: ConflictElement, resolution: Resolution) => {
+        const activeConflict = this.getActiveConflict(conflictElement);
+
+        const {
+            original,
+            ours,
+            theirs,
+        } = activeConflict;
+
+        // General
+        const tags = this.getTagsComparision(
+            original.tags,
+            ours?.tags,
+            theirs?.tags,
+        );
+
+        const conflictedTags = tags.filter(tag => tag.conflicted);
+        const resolvedTags = conflictedTags.filter(item => resolution[item.title]);
+
+        // For map row
+        const oursMapSelected = resolution.$map === 'ours';
+        const theirsMapSelected = resolution.$map === 'theirs';
+        const mapSelected = oursMapSelected || theirsMapSelected;
+
+        const mapConflicted = !!ours
+            && !!theirs
+            && JSON.stringify(ours.geoJSON?.geometry) !== JSON.stringify(theirs.geoJSON?.geometry);
+
+        // For Info row
+        let resolvedCount = resolvedTags.length;
+        let conflictedCount = conflictedTags.length;
+        if (mapConflicted) {
+            conflictedCount += 1;
+        }
+        if (mapConflicted && mapSelected) {
+            resolvedCount += 1;
+        }
+
+        const modifiedMode = !!ours && !!theirs;
+
+        // For Tag row
+        const originalTagCount = Object.keys(original.tags || {}).length;
+        const oursTagCount = Object.keys(ours?.tags || {}).length;
+        const theirsTagCount = Object.keys(theirs?.tags || {}).length;
+
+        return {
+            activeConflict,
+            resolvedCount,
+            conflictedCount,
+            modifiedMode,
+            originalTagCount,
+            oursTagCount,
+            theirsTagCount,
+            tags,
+            conflictedTags,
+            mapSelected,
+            oursMapSelected,
+            theirsMapSelected,
+            mapConflicted,
+        };
+    })
 
     private handleCheckboxChange = (value: boolean) => {
         this.setState({ showOnlyConflicts: value });
@@ -201,7 +306,7 @@ class Conflict extends React.PureComponent<Props, State> {
 
     private setResolution = (resolvedData: object) => {
         this.setState({
-            resolution: resolvedData.tags,
+            resolution: resolvedData.tags || {},
         });
     }
 
@@ -209,22 +314,69 @@ class Conflict extends React.PureComponent<Props, State> {
         this.handleTagClick('$map', origin);
     }
 
-    private handleUpdate = () => {
+    private handleResolve = () => {
         const {
             requests: {
                 conflictUpdate,
+                conflictResolve,
+                conflictGet: {
+                    response,
+                },
             },
         } = this.props;
         const { resolution } = this.state;
-        conflictUpdate.do({
-            resolution: {
-                tags: resolution,
-            },
-        });
-    }
 
-    private handleSave = () => {
-        console.warn('save');
+        if (!response) {
+            return;
+        }
+        const {
+            resolvedCount,
+            conflictedCount,
+            activeConflict,
+            tags,
+        } = this.getVariousData(response as ConflictElement, resolution);
+
+        const mappedTags = listToMap(
+            tags,
+            tag => tag.title,
+            (tag, key) => {
+                if (resolution[key] === 'ours') {
+                    return tag.oursValue;
+                }
+                if (resolution[key] === 'theirs') {
+                    return tag.theirsValue;
+                }
+                return undefined;
+            },
+        );
+
+        let location;
+        if (resolution.$map === 'ours') {
+            ({ location } = activeConflict.ours);
+        } else if (resolution.$map === 'theirs') {
+            ({ location } = activeConflict.theirs);
+        }
+
+        let conflictingNodes;
+        if (resolution.$map === 'ours') {
+            ({ conflictingNodes } = activeConflict.ours);
+        } else if (resolution.$map === 'theirs') {
+            ({ conflictingNodes } = activeConflict.theirs);
+        }
+
+        const params = {
+            location,
+            conflictingNodes,
+            tags: mappedTags,
+        };
+
+        console.warn(params);
+
+        if (resolvedCount === conflictedCount) {
+            conflictResolve.do(params);
+        } else {
+            conflictUpdate.do(params);
+        }
     }
 
     private handleDelete = () => {
@@ -235,12 +387,13 @@ class Conflict extends React.PureComponent<Props, State> {
         console.warn('keep');
     }
 
-    private handleTagClick = (key: string, _: ResolveOrigin | undefined, value?: string) => {
+    private handleTagClick = (key: string, origin: ResolveOrigin | undefined) => {
         this.setState((state) => {
             const { resolution } = state;
+            const newOrigin = resolution[key] === origin ? undefined : origin;
             const newResolution = {
                 ...resolution,
-                [key]: value === resolution[key] ? undefined : value,
+                [key]: newOrigin,
             };
             return { ...state, resolution: newResolution };
         });
@@ -249,8 +402,8 @@ class Conflict extends React.PureComponent<Props, State> {
     private rowRendererParams = (key: string, item: TagStatus) => {
         const { resolution } = this.state;
 
-        const oursSelected = resolution[key] === item.oursValue;
-        const theirsSelected = resolution[key] === item.theirsValue;
+        const oursSelected = resolution[key] === 'ours';
+        const theirsSelected = resolution[key] === 'theirs';
         const selected = oursSelected || theirsSelected;
 
         return {
@@ -269,11 +422,12 @@ class Conflict extends React.PureComponent<Props, State> {
             requests: {
                 conflictGet: {
                     response,
+                    pending,
                 },
             },
         } = this.props;
 
-        if (!activeConflictId || !response) {
+        if (!activeConflictId) {
             return (
                 <Message>
                     Please select a conflict to continue.
@@ -281,7 +435,34 @@ class Conflict extends React.PureComponent<Props, State> {
             );
         }
 
-        const activeConflict = this.getActiveConflict(response as ConflictElement);
+        if (pending || !response) {
+            return (
+                <div className={_cs(styles.content, className)}>
+                    <LoadingAnimation />
+                </div>
+            );
+        }
+
+        const {
+            showOnlyConflicts,
+            resolution,
+        } = this.state;
+
+        const {
+            activeConflict,
+            resolvedCount,
+            conflictedCount,
+            modifiedMode,
+            originalTagCount,
+            oursTagCount,
+            theirsTagCount,
+            tags,
+            conflictedTags,
+            mapSelected,
+            oursMapSelected,
+            theirsMapSelected,
+            mapConflicted,
+        } = this.getVariousData(response as ConflictElement, resolution);
 
         const {
             type,
@@ -289,45 +470,6 @@ class Conflict extends React.PureComponent<Props, State> {
             ours,
             theirs,
         } = activeConflict;
-
-        const {
-            showOnlyConflicts,
-            resolution,
-        } = this.state;
-
-        // General
-        const tags = getTagsComparision(
-            original.tags,
-            ours?.tags,
-            theirs?.tags,
-        );
-
-        const conflictedTags = tags.filter(tag => tag.conflicted);
-        const resolvedTags = conflictedTags.filter(item => resolution[item.title]);
-        const modifiedMode = !!ours && !!theirs;
-
-        // For map row
-        const oursMapSelected = resolution.$map === 'ours';
-        const theirsMapSelected = resolution.$map === 'theirs';
-        const mapConflicted = !!ours
-            && !!theirs
-            && JSON.stringify(ours.geoJSON?.geometry) !== JSON.stringify(theirs.geoJSON?.geometry);
-        const mapSelected = oursMapSelected || theirsMapSelected;
-
-        // For Info row
-        let resolvedCount = resolvedTags.length;
-        let conflictedCount = conflictedTags.length;
-        if (mapConflicted) {
-            conflictedCount += 1;
-        }
-        if (mapConflicted && mapSelected) {
-            resolvedCount += 1;
-        }
-
-        // For Tag row
-        const originalTagCount = Object.keys(original.tags || {}).length;
-        const oursTagCount = Object.keys(ours?.tags || {}).length;
-        const theirsTagCount = Object.keys(theirs?.tags || {}).length;
 
         return (
             <div className={_cs(styles.content, className)}>
@@ -344,13 +486,7 @@ class Conflict extends React.PureComponent<Props, State> {
                                     label="Only show conflicted tags"
                                 />
                                 <Button
-                                    onClick={this.handleUpdate}
-                                    buttonType="button-primary"
-                                >
-                                    Update
-                                </Button>
-                                <Button
-                                    onClick={this.handleSave}
+                                    onClick={this.handleResolve}
                                     buttonType="button-primary"
                                 >
                                     Resolve
