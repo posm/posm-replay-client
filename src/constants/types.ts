@@ -49,8 +49,8 @@ export interface BasicConflictElement {
 
 export interface ConflictElement extends BasicConflictElement {
     originalGeojson: ElementGeoJSON;
-    localGeojson: ElementGeoJSON;
-    upstreamGeojson: ElementGeoJSON;
+    localGeojson?: ElementGeoJSON;
+    upstreamGeojson?: ElementGeoJSON;
 }
 
 // For nodes:

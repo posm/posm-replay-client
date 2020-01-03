@@ -67,12 +67,18 @@ interface Params {
     location?: unknown;
     conflictingNodes?: unknown;
 
-    setResolution?: (resolvedData: object) => void;
+    setResolution?: (resolvedData: Response['resolvedData']) => void;
 }
 
 interface Response {
-    resolvedData: object;
+    resolvedData: {
+        id: number;
+        tags?: Tags;
+        location?: unknown;
+        conflictingNodes?: unknown;
+    };
 }
+
 type Props = NewProps<OwnProps, Params>;
 
 const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
@@ -91,8 +97,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             if (setResolution) {
                 const myResponse = response as Response;
                 const { resolvedData } = myResponse;
-                // FIXME: we don't do this here
-                // setResolution(resolvedData);
+                setResolution(resolvedData);
             }
         },
     },
@@ -157,44 +162,51 @@ class Conflict extends React.PureComponent<Props, State> {
         };
     }
 
-    private getActiveConflict = memoize((conflict: ConflictElement) => ({
-        type: getShapeType(conflict.originalGeojson),
-        name: conflict.name,
-        id: conflict.elementId,
-        original: {
-            geoJSON: conflict.originalGeojson,
-            bounds: getBounds(conflict.originalGeojson),
-            meta: {
-                id: conflict.originalGeojson.properties.id,
-                version: conflict.originalGeojson.properties.version,
+    private getActiveConflict = memoize((conflict: ConflictElement) => {
+        const response = {
+            type: getShapeType(conflict.originalGeojson),
+            name: conflict.name,
+            id: conflict.elementId,
+            original: {
+                geoJSON: conflict.originalGeojson,
+                bounds: getBounds(conflict.originalGeojson),
+                meta: {
+                    id: conflict.originalGeojson.properties.id,
+                    version: conflict.originalGeojson.properties.version,
+                },
+                tags: conflict.originalGeojson.properties.tags,
+                location: conflict.originalGeojson.properties.location,
+                conflictingNodes: conflict.originalGeojson.properties.conflictingNodes,
             },
-            tags: conflict.originalGeojson.properties.tags,
-            location: conflict.originalGeojson.properties.location,
-            conflictingNodes: conflict.originalGeojson.properties.conflictingNodes,
-        },
-        ours: {
-            geoJSON: conflict.localGeojson,
-            bounds: getBounds(conflict.localGeojson),
-            meta: {
-                id: conflict.localGeojson.properties.id,
-                version: conflict.localGeojson.properties.version,
-            },
-            tags: conflict.localGeojson.properties.tags,
-            location: conflict.localGeojson.properties.location,
-            conflictingNodes: conflict.localGeojson.properties.conflictingNodes,
-        },
-        theirs: {
-            geoJSON: conflict.upstreamGeojson,
-            bounds: getBounds(conflict.upstreamGeojson),
-            meta: {
-                id: conflict.upstreamGeojson.properties.id,
-                version: conflict.upstreamGeojson.properties.version,
-            },
-            tags: conflict.upstreamGeojson.properties.tags,
-            location: conflict.upstreamGeojson.properties.location,
-            conflictingNodes: conflict.upstreamGeojson.properties.conflictingNodes,
-        },
-    }));
+            ours: conflict.localGeojson
+                ? ({
+                    geoJSON: conflict.localGeojson,
+                    bounds: getBounds(conflict.localGeojson),
+                    meta: {
+                        id: conflict.localGeojson.properties.id,
+                        version: conflict.localGeojson.properties.version,
+                    },
+                    tags: conflict.localGeojson.properties.tags,
+                    location: conflict.localGeojson.properties.location,
+                    conflictingNodes: conflict.localGeojson.properties.conflictingNodes,
+                })
+                : undefined,
+            theirs: conflict.upstreamGeojson
+                ? ({
+                    geoJSON: conflict.upstreamGeojson,
+                    bounds: getBounds(conflict.upstreamGeojson),
+                    meta: {
+                        id: conflict.upstreamGeojson.properties.id,
+                        version: conflict.upstreamGeojson.properties.version,
+                    },
+                    tags: conflict.upstreamGeojson.properties.tags,
+                    location: conflict.upstreamGeojson.properties.location,
+                    conflictingNodes: conflict.upstreamGeojson.properties.conflictingNodes,
+                })
+                : undefined,
+        };
+        return response;
+    })
 
     private getTagsComparision = memoize((
         original: Tags | undefined,
@@ -304,10 +316,14 @@ class Conflict extends React.PureComponent<Props, State> {
         this.setState({ showOnlyConflicts: value });
     }
 
-    private setResolution = (resolvedData: object) => {
+    private setResolution = (resolvedData: Response['resolvedData']) => {
+        console.warn(resolvedData);
+        // FIXME: make some changes here
+        /*
         this.setState({
             resolution: resolvedData.tags || {},
         });
+        */
     }
 
     private handleMapClick = (origin: ResolveOrigin | undefined) => {
@@ -352,16 +368,16 @@ class Conflict extends React.PureComponent<Props, State> {
 
         let location;
         if (resolution.$map === 'ours') {
-            ({ location } = activeConflict.ours);
+            location = activeConflict.ours?.location;
         } else if (resolution.$map === 'theirs') {
-            ({ location } = activeConflict.theirs);
+            location = activeConflict.theirs?.location;
         }
 
         let conflictingNodes;
         if (resolution.$map === 'ours') {
-            ({ conflictingNodes } = activeConflict.ours);
+            conflictingNodes = activeConflict.ours?.conflictingNodes;
         } else if (resolution.$map === 'theirs') {
-            ({ conflictingNodes } = activeConflict.theirs);
+            conflictingNodes = activeConflict.theirs?.conflictingNodes;
         }
 
         const params = {
@@ -423,6 +439,12 @@ class Conflict extends React.PureComponent<Props, State> {
                 conflictGet: {
                     response,
                     pending,
+                },
+                conflictUpdate: {
+                    pending: pendingUpdate,
+                },
+                conflictResolve: {
+                    pending: pendingResolve,
                 },
             },
         } = this.props;
@@ -488,6 +510,7 @@ class Conflict extends React.PureComponent<Props, State> {
                                 <Button
                                     onClick={this.handleResolve}
                                     buttonType="button-primary"
+                                    pending={pendingUpdate || pendingResolve}
                                 >
                                     Resolve
                                 </Button>
