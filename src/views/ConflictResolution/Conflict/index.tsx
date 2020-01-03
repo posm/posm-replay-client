@@ -35,6 +35,7 @@ import {
     Bounds,
     ElementGeoJSON,
     ShapeType,
+    ResolutionStatus,
 } from '#constants/types';
 
 import Row from '../Row';
@@ -54,6 +55,7 @@ interface Resolution {
 interface OwnProps {
     className?: string;
     activeConflictId?: number;
+    updateConflictStatus: (activeConflictId: number, resolutionStatus: ResolutionStatus) => void;
 }
 
 interface State {
@@ -100,6 +102,14 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             location: params.location,
             conflictingNodes: params.conflictingNodes,
         }),
+        onSuccess: ({ props: {
+            updateConflictStatus,
+            activeConflictId,
+        } }) => {
+            if (activeConflictId) {
+                updateConflictStatus(activeConflictId, 'partially_resolved');
+            }
+        },
         onMount: false,
     },
     conflictResolve: {
@@ -110,6 +120,14 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             location: params.location,
             conflictingNodes: params.conflictingNodes,
         }),
+        onSuccess: ({ props: {
+            updateConflictStatus,
+            activeConflictId,
+        } }) => {
+            if (activeConflictId) {
+                updateConflictStatus(activeConflictId, 'resolved');
+            }
+        },
         onMount: false,
     },
 };

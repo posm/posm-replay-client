@@ -1,10 +1,16 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
+import produce from 'immer';
 
 import ListView from '#rsu/../v2/View/ListView';
 import ProgressBar from '#components/ProgressBar';
+import LoadingAnimation from '#rscv/LoadingAnimation';
 import ConflictStatus from '#components/ConflictStatus';
-import { BasicConflictElement, Bounds } from '#constants/types';
+import {
+    BasicConflictElement,
+    ResolutionStatus,
+    Bounds,
+} from '#constants/types';
 
 import {
     createConnectedRequestCoordinator,
@@ -149,9 +155,30 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         this.setState({ activeConflictId: conflictId });
     }
 
+    private handleConflictStatusUpdate = (
+        conflictId: number,
+        resolutionStatus: ResolutionStatus,
+    ) => {
+        const { conflicts } = this.state;
+        const newConflicts = produce(conflicts, (safeConflicts) => {
+            const activeConflictIndex = safeConflicts.findIndex(
+                (c: BasicConflictElement) => c.id === conflictId,
+            );
+            // eslint-disable-next-line no-param-reassign
+            safeConflicts[activeConflictIndex].status = resolutionStatus;
+        });
+        this.setState({ conflicts: newConflicts });
+    }
 
     public render() {
-        const { className } = this.props;
+        const {
+            className,
+            requests: {
+                currentAoiGet: { pending: currentAoiPending },
+                conflictsGet: { pending: conflictsGetPending },
+            },
+        } = this.props;
+
         const {
             activeConflictId,
             aoiInformation,
@@ -161,9 +188,11 @@ class ConflictResolution extends React.PureComponent<Props, State> {
         const total = conflicts.length;
         const resolved = conflicts.filter(c => c.status === 'resolved').length;
         const partiallyResolved = conflicts.filter(c => c.status === 'partially_resolved').length;
+        const pending = currentAoiPending || conflictsGetPending;
 
         return (
             <div className={_cs(className, styles.conflictResolution)}>
+                {pending && <LoadingAnimation /> }
                 <div className={styles.sidebar}>
                     <header className={styles.header}>
                         <h2 className={styles.heading}>
@@ -197,6 +226,7 @@ class ConflictResolution extends React.PureComponent<Props, State> {
                     key={activeConflictId}
                     activeConflictId={activeConflictId}
                     className={styles.content}
+                    updateConflictStatus={this.handleConflictStatusUpdate}
                 />
             </div>
         );
