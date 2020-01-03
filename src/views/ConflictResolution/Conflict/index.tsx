@@ -4,6 +4,7 @@ import {
     union,
     isDefined,
     listToMap,
+    mapToMap,
 } from '@togglecorp/fujs';
 import {
     buffer,
@@ -67,16 +68,7 @@ interface Params {
     location?: unknown;
     conflictingNodes?: unknown;
 
-    setResolution?: (resolvedData: Response['resolvedData']) => void;
-}
-
-interface Response {
-    resolvedData: {
-        id: number;
-        tags?: Tags;
-        location?: unknown;
-        conflictingNodes?: unknown;
-    };
+    setResolution?: (response: ConflictElement) => void;
 }
 
 type Props = NewProps<OwnProps, Params>;
@@ -95,9 +87,8 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             }
             const { setResolution } = params;
             if (setResolution) {
-                const myResponse = response as Response;
-                const { resolvedData } = myResponse;
-                setResolution(resolvedData);
+                const myResponse = response as ConflictElement;
+                setResolution(myResponse);
             }
         },
     },
@@ -316,14 +307,73 @@ class Conflict extends React.PureComponent<Props, State> {
         this.setState({ showOnlyConflicts: value });
     }
 
-    private setResolution = (resolvedData: Response['resolvedData']) => {
-        console.warn(resolvedData);
-        // FIXME: make some changes here
-        /*
+    private setResolution = (response: ConflictElement) => {
+        const {
+            type,
+            resolvedData: {
+                tags = {},
+                location,
+                conflictingNodes,
+            },
+        } = response;
+
+        const activeConflict = this.getActiveConflict(response);
+
+        const resolution = mapToMap(
+            tags,
+            key => key,
+            (elem, key) => {
+                if (elem === null) {
+                    if (activeConflict.ours?.tags[key] === undefined) {
+                        return 'ours';
+                    }
+                    if (activeConflict.theirs?.tags[key] === undefined) {
+                        return 'theirs';
+                    }
+                    return undefined;
+                }
+
+                if (elem === activeConflict.ours?.tags[key]) {
+                    return 'ours';
+                }
+                if (elem === activeConflict.theirs?.tags[key]) {
+                    return 'theirs';
+                }
+                return undefined;
+            },
+        );
+
+        const { stringify } = JSON;
+
+        if (type === 'node') {
+            if (location === null) {
+                if (activeConflict.ours?.location === undefined) {
+                    resolution.$map = 'ours';
+                } else if (activeConflict.theirs?.location === undefined) {
+                    resolution.$map = 'theirs';
+                }
+            } else if (stringify(activeConflict.ours?.location) === stringify(location)) {
+                resolution.$map = 'ours';
+            } else if (stringify(activeConflict.theirs?.location) === stringify(location)) {
+                resolution.$map = 'theirs';
+            }
+        } else if (type === 'way' || type === 'relation') {
+            if (conflictingNodes === null) {
+                if (activeConflict.ours?.conflictingNodes === undefined) {
+                    resolution.$map = 'ours';
+                } else if (activeConflict.theirs?.conflictingNodes === undefined) {
+                    resolution.$map = 'theirs';
+                }
+            } else if (stringify(activeConflict.ours?.conflictingNodes) === stringify(conflictingNodes)) { // eslint-disable-line max-len
+                resolution.$map = 'ours';
+            } else if (stringify(activeConflict.theirs?.conflictingNodes) === stringify(conflictingNodes)) { // eslint-disable-line max-len
+                resolution.$map = 'theirs';
+            }
+        }
+
         this.setState({
-            resolution: resolvedData.tags || {},
+            resolution,
         });
-        */
     }
 
     private handleMapClick = (origin: ResolveOrigin | undefined) => {
@@ -352,15 +402,22 @@ class Conflict extends React.PureComponent<Props, State> {
             tags,
         } = this.getVariousData(response as ConflictElement, resolution);
 
+
+        // NOTE: may need to change undefined to null
+
         const mappedTags = listToMap(
             tags,
             tag => tag.title,
             (tag, key) => {
                 if (resolution[key] === 'ours') {
-                    return tag.oursValue;
+                    return isDefined(tag.oursValue)
+                        ? tag.oursValue
+                        : null;
                 }
                 if (resolution[key] === 'theirs') {
-                    return tag.theirsValue;
+                    return isDefined(tag.theirsValue)
+                        ? tag.theirsValue
+                        : null;
                 }
                 return undefined;
             },
@@ -368,16 +425,28 @@ class Conflict extends React.PureComponent<Props, State> {
 
         let location;
         if (resolution.$map === 'ours') {
-            location = activeConflict.ours?.location;
+            const oursLocation = activeConflict.ours?.location;
+            location = isDefined(oursLocation)
+                ? oursLocation
+                : null;
         } else if (resolution.$map === 'theirs') {
-            location = activeConflict.theirs?.location;
+            const theirsLocation = activeConflict.theirs?.location;
+            location = isDefined(theirsLocation)
+                ? theirsLocation
+                : null;
         }
 
         let conflictingNodes;
         if (resolution.$map === 'ours') {
-            conflictingNodes = activeConflict.ours?.conflictingNodes;
+            const oursConflictingNodes = activeConflict.ours?.conflictingNodes;
+            conflictingNodes = isDefined(oursConflictingNodes)
+                ? oursConflictingNodes
+                : null;
         } else if (resolution.$map === 'theirs') {
-            conflictingNodes = activeConflict.theirs?.conflictingNodes;
+            const theirsConflictingNodes = activeConflict.theirs?.conflictingNodes;
+            conflictingNodes = isDefined(theirsConflictingNodes)
+                ? theirsConflictingNodes
+                : null;
         }
 
         const params = {
@@ -385,8 +454,6 @@ class Conflict extends React.PureComponent<Props, State> {
             conflictingNodes,
             tags: mappedTags,
         };
-
-        console.warn(params);
 
         if (resolvedCount === conflictedCount) {
             conflictResolve.do(params);

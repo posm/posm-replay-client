@@ -51,6 +51,12 @@ export interface ConflictElement extends BasicConflictElement {
     originalGeojson: ElementGeoJSON;
     localGeojson?: ElementGeoJSON;
     upstreamGeojson?: ElementGeoJSON;
+    resolvedData: {
+        id: number;
+        tags?: Tags;
+        location?: unknown;
+        conflictingNodes?: unknown;
+    };
 }
 
 // For nodes:
