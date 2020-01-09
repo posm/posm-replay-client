@@ -57,6 +57,7 @@ export interface ConflictElement extends BasicConflictElement {
         location?: unknown;
         conflictingNodes?: unknown;
     };
+    resolvedFrom: 'theirs' | 'ours' | 'custom' | null;
 }
 
 // For nodes:

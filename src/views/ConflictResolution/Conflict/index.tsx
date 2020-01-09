@@ -5,6 +5,7 @@ import {
     isDefined,
     listToMap,
     mapToMap,
+    doesObjectHaveNoData,
 } from '@togglecorp/fujs';
 import {
     buffer,
@@ -61,6 +62,7 @@ interface OwnProps {
 interface State {
     showOnlyConflicts: boolean;
     resolution: Resolution;
+    bulkResolution: 'ours' | 'theirs' | 'custom' | null;
 }
 
 const rowKeySelector = (t: TagStatus) => t.title;
@@ -130,6 +132,45 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
         },
         onMount: false,
     },
+    useOursRequest: {
+        url: ({ props: { activeConflictId } }) => `/conflicts/${activeConflictId}/resolve/ours/`,
+        method: methods.PUT,
+        onSuccess: ({ props: {
+            updateConflictStatus,
+            activeConflictId,
+        } }) => {
+            if (activeConflictId) {
+                updateConflictStatus(activeConflictId, 'resolved');
+            }
+        },
+        onMount: false,
+    },
+    useTheirsRequest: {
+        url: ({ props: { activeConflictId } }) => `/conflicts/${activeConflictId}/resolve/theirs/`,
+        method: methods.PUT,
+        onSuccess: ({ props: {
+            updateConflictStatus,
+            activeConflictId,
+        } }) => {
+            if (activeConflictId) {
+                updateConflictStatus(activeConflictId, 'resolved');
+            }
+        },
+        onMount: false,
+    },
+    resetConflictRequest: {
+        url: ({ props: { activeConflictId } }) => `/conflicts/${activeConflictId}/reset/`,
+        method: methods.PUT,
+        onSuccess: ({ props: {
+            updateConflictStatus,
+            activeConflictId,
+        } }) => {
+            if (activeConflictId) {
+                updateConflictStatus(activeConflictId, 'unresolved');
+            }
+        },
+        onMount: false,
+    },
 };
 
 const getBounds = (geoJson: ElementGeoJSON) => {
@@ -166,6 +207,7 @@ class Conflict extends React.PureComponent<Props, State> {
 
         this.state = {
             showOnlyConflicts: true,
+            bulkResolution: null,
 
             resolution: {},
         };
@@ -187,7 +229,7 @@ class Conflict extends React.PureComponent<Props, State> {
                 location: conflict.originalGeojson.properties.location,
                 conflictingNodes: conflict.originalGeojson.properties.conflictingNodes,
             },
-            ours: conflict.localGeojson
+            ours: (conflict.localGeojson && !doesObjectHaveNoData(conflict.localGeojson))
                 ? ({
                     geoJSON: conflict.localGeojson,
                     bounds: getBounds(conflict.localGeojson),
@@ -200,7 +242,7 @@ class Conflict extends React.PureComponent<Props, State> {
                     conflictingNodes: conflict.localGeojson.properties.conflictingNodes,
                 })
                 : undefined,
-            theirs: conflict.upstreamGeojson
+            theirs: (conflict.upstreamGeojson && !doesObjectHaveNoData(conflict.upstreamGeojson))
                 ? ({
                     geoJSON: conflict.upstreamGeojson,
                     bounds: getBounds(conflict.upstreamGeojson),
@@ -333,6 +375,7 @@ class Conflict extends React.PureComponent<Props, State> {
                 location,
                 conflictingNodes,
             },
+            resolvedFrom,
         } = response;
 
         const activeConflict = this.getActiveConflict(response);
@@ -391,6 +434,7 @@ class Conflict extends React.PureComponent<Props, State> {
 
         this.setState({
             resolution,
+            bulkResolution: resolvedFrom,
         });
     }
 
@@ -480,12 +524,38 @@ class Conflict extends React.PureComponent<Props, State> {
         }
     }
 
-    private handleDelete = () => {
-        console.warn('delete');
+    private handleBulkResolve = () => {
+        const {
+            requests: {
+                useTheirsRequest,
+                useOursRequest,
+                resetConflictRequest,
+            },
+        } = this.props;
+        const { bulkResolution } = this.state;
+        if (bulkResolution === 'ours') {
+            useOursRequest.do();
+        }
+        if (bulkResolution === 'theirs') {
+            useTheirsRequest.do();
+        }
+        if (bulkResolution === null) {
+            resetConflictRequest.do();
+        }
     }
 
-    private handleKeep = () => {
-        console.warn('keep');
+    private handleBulkOursSelect = () => {
+        const { bulkResolution } = this.state;
+        this.setState({
+            bulkResolution: bulkResolution === 'ours' ? null : 'ours',
+        });
+    }
+
+    private handleBulkTheirsSelect = () => {
+        const { bulkResolution } = this.state;
+        this.setState({
+            bulkResolution: bulkResolution === 'theirs' ? null : 'theirs',
+        });
     }
 
     private handleTagClick = (key: string, origin: ResolveOrigin | undefined) => {
@@ -531,6 +601,15 @@ class Conflict extends React.PureComponent<Props, State> {
                 conflictResolve: {
                     pending: pendingResolve,
                 },
+                useOursRequest: {
+                    pending: pendingOursRequest,
+                },
+                useTheirsRequest: {
+                    pending: pendingTheirsRequest,
+                },
+                resetConflictRequest: {
+                    pending: pendingReset,
+                },
             },
         } = this.props;
 
@@ -553,6 +632,7 @@ class Conflict extends React.PureComponent<Props, State> {
         const {
             showOnlyConflicts,
             resolution,
+            bulkResolution,
         } = this.state;
 
         const {
@@ -577,6 +657,8 @@ class Conflict extends React.PureComponent<Props, State> {
             ours,
             theirs,
         } = activeConflict;
+
+        const pendingBulkResolve = pendingOursRequest || pendingTheirsRequest;
 
         return (
             <div className={_cs(styles.content, className)}>
@@ -603,16 +685,11 @@ class Conflict extends React.PureComponent<Props, State> {
                         ) : (
                             <>
                                 <Button
-                                    onClick={this.handleDelete}
+                                    onClick={this.handleBulkResolve}
                                     buttonType="button-primary"
+                                    pending={pendingBulkResolve || pendingReset}
                                 >
-                                    Delete
-                                </Button>
-                                <Button
-                                    onClick={this.handleKeep}
-                                    buttonType="button-primary"
-                                >
-                                    Keep
+                                    Resolve
                                 </Button>
                             </>
                         )}
@@ -640,14 +717,36 @@ class Conflict extends React.PureComponent<Props, State> {
                             </h2>
                         )}
                         center={(
-                            <h2>
-                                Ours
-                            </h2>
+                            <>
+                                <h2>
+                                    Ours
+                                </h2>
+                                {!modifiedMode && (
+                                    <Button
+                                        buttonType={bulkResolution === 'ours' ? 'button-success' : 'button-default'}
+                                        iconName={bulkResolution === 'ours' ? 'checkmarkCircle' : 'checkmarkCircleEmpty'}
+                                        onClick={this.handleBulkOursSelect}
+                                    >
+                                        { bulkResolution === 'ours' ? 'Selected' : 'Select' }
+                                    </Button>
+                                )}
+                            </>
                         )}
                         right={(
-                            <h2>
-                                Theirs
-                            </h2>
+                            <>
+                                <h2>
+                                    Theirs
+                                </h2>
+                                {!modifiedMode && (
+                                    <Button
+                                        buttonType={bulkResolution === 'theirs' ? 'button-success' : 'button-default'}
+                                        iconName={bulkResolution === 'theirs' ? 'checkmarkCircle' : 'checkmarkCircleEmpty'}
+                                        onClick={this.handleBulkTheirsSelect}
+                                    >
+                                        { bulkResolution === 'theirs' ? 'Selected' : 'Select' }
+                                    </Button>
+                                )}
+                            </>
                         )}
                     />
                 </div>
@@ -656,7 +755,6 @@ class Conflict extends React.PureComponent<Props, State> {
                         leftClassName={styles.mapContainer}
                         left={(
                             <ConflictMap
-                                className={styles.remap}
                                 type={type}
                                 bounds={original.bounds}
                                 geoJSON={original.geoJSON}
@@ -668,7 +766,6 @@ class Conflict extends React.PureComponent<Props, State> {
                         center={
                             ours ? (
                                 <ConflictMap
-                                    className={styles.remap}
                                     type={type}
                                     bounds={ours.bounds}
                                     geoJSON={ours.geoJSON}
@@ -679,7 +776,7 @@ class Conflict extends React.PureComponent<Props, State> {
                                     disabled={!mapConflicted}
                                 />
                             ) : (
-                                <Message>
+                                <Message className={styles.deletedElement}>
                                     The element was deleted!
                                 </Message>
                             )
@@ -688,7 +785,6 @@ class Conflict extends React.PureComponent<Props, State> {
                         right={
                             theirs ? (
                                 <ConflictMap
-                                    className={styles.remap}
                                     type={type}
                                     bounds={theirs.bounds}
                                     geoJSON={theirs.geoJSON}
@@ -699,26 +795,25 @@ class Conflict extends React.PureComponent<Props, State> {
                                     disabled={!mapConflicted}
                                 />
                             ) : (
-                                <Message>
+                                <Message className={styles.deletedElement}>
                                     The element was deleted!
                                 </Message>
                             )
                         }
                     />
                     <Row
-                        className={styles.subHeaderRow}
                         left={(
-                            <h3 className={styles.subHeader}>
+                            <h3>
                                 {`Tags (${originalTagCount})`}
                             </h3>
                         )}
                         center={(
-                            <h3 className={styles.subHeader}>
+                            <h3>
                                 { ours ? `Tags (${oursTagCount})` : ''}
                             </h3>
                         )}
                         right={(
-                            <h3 className={styles.subHeader}>
+                            <h3>
                                 {theirs ? `Tags (${theirsTagCount})` : ''}
                             </h3>
                         )}

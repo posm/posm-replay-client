@@ -20,8 +20,17 @@
 
     .button-primary {
         background-color: var(--color-primary)!important;
-        color: var(--color-text-on-primary)!important;
         padding: var(--spacing-small) var(--spacing-medium)!important;
+        color: var(--color-text-on-primary)!important;
+
+        .tc-v2-button-spinner {
+            color: var(--color-text-on-primary)!important;
+        }
+
+        &:disabled {
+            background-color: var(--color-background-disabled)!important;
+            color: var(--color-text-disabled)!important;
+        }
     }
 }
 

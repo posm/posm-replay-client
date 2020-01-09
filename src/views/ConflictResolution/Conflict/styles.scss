@@ -47,12 +47,11 @@
     }
 
     .tag-rows-container {
-        .sub-header-row {
-            .sub-header {}
-        }
-
         .map-container {
-            .remap {}
+            .deleted-element {
+                border: var(--width-separator-thin) solid var(--color-separator);
+                background-color: var(--color-foreground);
+            }
         }
     }
 }
