@@ -148,7 +148,13 @@ class ConflictResolution extends React.PureComponent<Props, State> {
     }
 
     private setConflicts = (conflicts: BasicConflictElement[]) => {
-        this.setState({ conflicts });
+        const { activeConflictId } = this.state;
+        if (!activeConflictId && conflicts.length > 0) {
+            const newActiveConflictId = conflicts[0].id;
+            this.setState({ conflicts, activeConflictId: newActiveConflictId });
+        } else {
+            this.setState({ conflicts });
+        }
     }
 
     private handleConflictListItemClick = (conflictId: number) => {
