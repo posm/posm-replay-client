@@ -42,14 +42,12 @@ const routeSettings: SomeRoute[] = [
         load: () => import('../views/ConflictResolution'),
         navbar: true,
     },
-
     {
         name: 'fourHundredThree',
         title: '403',
         path: '/403/',
         load: () => import('../views/FourHundredThree'),
     },
-
     {
         name: 'fourHundredFour',
         title: '404',

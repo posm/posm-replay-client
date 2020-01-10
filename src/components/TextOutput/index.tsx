@@ -13,6 +13,10 @@ interface Props {
 }
 
 class TextOutput extends React.PureComponent<Props> {
+    static defaultProps = {
+        value: '-',
+    };
+
     public render() {
         const {
             className,

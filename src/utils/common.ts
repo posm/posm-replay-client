@@ -13,16 +13,18 @@ export const forEach = (obj: object, func: (key: string, val: unknown) => void) 
 
 export const sanitizeResponse = (data: unknown): any => {
     if (data === null || data === undefined) {
-        return undefined;
+        return data;
     }
     if (isList(data)) {
-        return data.map(sanitizeResponse).filter(isDefined);
+        return data
+            .map(sanitizeResponse)
+            .filter(item => item !== undefined);
     }
     if (isObject(data)) {
         let newData = {};
         forEach(data, (k, val) => {
             const newEntry = sanitizeResponse(val);
-            if (newEntry) {
+            if (newEntry !== undefined) {
                 newData = {
                     ...newData,
                     [k]: newEntry,

@@ -3,17 +3,34 @@ import {
     methods,
     CoordinatorAttributes,
 } from '@togglecorp/react-rest-request';
-// import { AppState } from '#store/types';
 
-// import store from '#store';
 import schema from '#schema';
 import { sanitizeResponse } from '#utils/common';
 
 const wsEndpoint = process.env.REACT_APP_API_SERVER_URL;
 
-// FIXME: don't know why eslint disable is required right now
-// eslint-disable-next-line arrow-parens
-export const createConnectedRequestCoordinator = <OwnProps>() => {
+const disableSchemaError = true;
+
+export const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+
+    if (parts.length === 2) {
+        const part = parts.pop();
+        return part && part.split(';').shift();
+    }
+    return undefined;
+};
+
+interface Error {
+    errors?: {
+        nonFieldErrors?: string[];
+        internalNonFieldErrors?: string[];
+        [key: string]: string[] | undefined;
+    };
+}
+
+export function createConnectedRequestCoordinator<OwnProps>() {
     type Props = OwnProps;
 
     const requestor = createRequestCoordinator({
@@ -22,23 +39,21 @@ export const createConnectedRequestCoordinator = <OwnProps>() => {
                 body,
                 method,
             } = data;
+
+            const csrftoken = getCookie('csrftoken');
             return {
                 method: method || methods.GET,
                 body: JSON.stringify(body),
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/json; charset=utf-8',
+                    'X-CSRFToken': csrftoken,
                 },
+                credentials: 'include',
             };
         },
+        // NOTE: we can inject props here
         transformProps: (props: Props) => props,
-        /*
-        transformProps: (props: Props) => {
-            const mapStyle = mapStyleSelector(store.getState() as AppState);
-            // console.warn('Map style is', mapStyle);
-            return props;
-        },
-        */
 
         transformUrl: (url: string) => {
             if (/^https?:\/\//i.test(url)) {
@@ -59,7 +74,7 @@ export const createConnectedRequestCoordinator = <OwnProps>() => {
             const extras = requestOptions as { schemaName?: string };
             if (!extras || extras.schemaName === undefined) {
                 // NOTE: usually there is no response body for DELETE
-                if (method !== methods.DELETE) {
+                if (method !== methods.DELETE && !disableSchemaError) {
                     console.error(`Schema is not defined for ${url} ${method}`);
                 }
             } else {
@@ -74,16 +89,21 @@ export const createConnectedRequestCoordinator = <OwnProps>() => {
             return sanitizedResponse;
         },
 
-        transformErrors: (response: { errors: string[] }) => {
-            const faramErrors = response.errors;
+        transformErrors: (response: Error) => {
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            const { non_field_errors, ...faramErrors } = response.errors || {};
+            // eslint-disable-next-line @typescript-eslint/camelcase
+            const nonFieldErrors = non_field_errors ? non_field_errors.join(' ') : undefined;
+
             return {
                 response,
                 faramErrors,
+                nonFieldErrors,
             };
         },
     });
 
     return requestor;
-};
+}
 
 export * from '@togglecorp/react-rest-request';

@@ -9,27 +9,27 @@ import styles from './styles.scss';
 
 interface Props {
     className?: string;
-    title: string;
-    conflictId: string;
-    onClick: (conflictId: string) => void;
+    name: string;
+    conflictId: number;
+    onClick: (conflictId: number) => void;
     isActive: boolean;
-    resolutionStatus: ResolutionStatus;
+    status: ResolutionStatus;
     type: ElementType;
 }
 
 const iconNames: {
     [key in ResolutionStatus]: string;
 } = {
-    conflicted: 'error',
+    unresolved: 'error',
     resolved: 'checkmarkCircle',
-    'partially-resolved': 'checkmarkCircleEmpty',
+    partially_resolved: 'checkmarkCircleEmpty', // eslint-disable-line @typescript-eslint/camelcase
 };
 const iconClassNames: {
     [key in ResolutionStatus]: string;
 } = {
-    conflicted: styles.error,
+    unresolved: styles.error,
     resolved: styles.success,
-    'partially-resolved': styles.pending,
+    partially_resolved: styles.pending, // eslint-disable-line @typescript-eslint/camelcase
 };
 
 class ConflictListItem extends React.PureComponent<Props> {
@@ -45,9 +45,9 @@ class ConflictListItem extends React.PureComponent<Props> {
     public render() {
         const {
             className,
-            title,
+            name,
             isActive,
-            resolutionStatus,
+            status,
             type,
         } = this.props;
 
@@ -58,10 +58,10 @@ class ConflictListItem extends React.PureComponent<Props> {
                 type="button"
             >
                 <Icon
-                    className={_cs(styles.icon, iconClassNames[resolutionStatus])}
-                    name={iconNames[resolutionStatus]}
+                    className={_cs(styles.icon, iconClassNames[status])}
+                    name={iconNames[status]}
                 />
-                {`${title} (${type})`}
+                {`${name} (${type})`}
             </button>
         );
     }

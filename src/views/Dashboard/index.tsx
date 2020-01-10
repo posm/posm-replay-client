@@ -2,6 +2,10 @@ import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 import memoize from 'memoize-one';
 import { navigate } from '@reach/router';
+import {
+    bboxPolygon,
+    area,
+} from '@turf/turf';
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
@@ -12,9 +16,21 @@ import MapBounds from '#re-map/MapBounds';
 
 import ConflictStatus from '#components/ConflictStatus';
 import TextOutput from '#components/TextOutput';
+import FormattedDate from '#rscv/FormattedDate';
+import Numeral from '#rscv/Numeral';
 import Info from '#components/Info';
+import LoadingAnimation from '#rscv/LoadingAnimation';
 import ProgressBar from '#components/ProgressBar';
 import TaskItem, { Status } from '#components/TaskItem';
+import { Bounds } from '#constants/types';
+
+import {
+    createConnectedRequestCoordinator,
+    createRequestClient,
+    methods,
+    NewProps,
+    ClientAttributes,
+} from '#request';
 
 import pathNames from '#constants/pathNames';
 
@@ -25,12 +41,19 @@ enum PosmStateEnum {
     'gathering_changesets',
     'extracting_upstream_aoi',
     'extracting_local_aoi',
-    'filtering_referenced_osm_elements',
+
+    // newly added
+    'detecting_conflicts',
+    'creating_geojsons',
+
     'conflicts',
     'resolved',
     'push_conflicts',
     'pushed_upstream',
 }
+
+const AOI_POLL_TIME = 3000;
+
 const isNotStarted = (state: PosmStateEnum) => state <= PosmStateEnum.not_triggered;
 const isAnalyzing = (state: PosmStateEnum) => (
     state > PosmStateEnum.not_triggered && state < PosmStateEnum.conflicts
@@ -50,30 +73,7 @@ interface PosmStatus {
     hasErrored?: boolean;
 }
 
-const nepalCenter: [number, number] = [
-    84.1240, 28.3949,
-];
-
 /*
-const nepalBounds: [number, number, number, number] = [
-    80.05858661752784, 26.347836996368667,
-    88.20166918432409, 30.44702867091792,
-];
-*/
-
-const lalitpurBounds: [number, number, number, number] = [
-    85.31066555023207,
-    27.67117097577173,
-    85.32710212707534,
-    27.682648488328013,
-];
-
-const mapOptions = {
-    zoomLevel: 3,
-    center: nepalCenter,
-    bounds: lalitpurBounds,
-};
-
 const mapStyle: mapboxgl.MapboxOptions['style'] = {
     version: 8,
     name: 'Base Layer',
@@ -98,21 +98,213 @@ const mapStyle: mapboxgl.MapboxOptions['style'] = {
         },
     ],
 };
+ */
 
+const mapStyle: mapboxgl.MapboxOptions['style'] = {
+    version: 8,
+    name: 'Wikimedia',
+    sources: {
+        base: {
+            type: 'raster',
+            tiles: [
+                'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png',
+            ],
+            tileSize: 256,
+        },
+    },
+    layers: [
+        {
+            id: 'background',
+            type: 'background',
+            paint: { 'background-color': 'rgb(239, 239, 239)' },
+        },
+        {
+            id: 'base',
+            type: 'raster',
+            source: 'base',
+        },
+    ],
+};
 
-const speed = 0.6;
+interface LocalElementsCount {
+    waysCount: number;
+    nodesCount: number;
+    relationsCount: number;
+}
+
+interface AoiInformation {
+    name: string;
+    description: string;
+    bounds?: Bounds;
+    area?: number;
+    dateCloned?: string;
+    localChangesetsCount?: number;
+    nodesCount?: number;
+    waysCount?: number;
+    relationsCount?: number;
+    totalResolvedElements?: number;
+    totalConflictingElements?: number;
+    localElementsCount?: LocalElementsCount;
+}
 
 interface State {
     posmStatus: PosmStatus;
     posmStates: PosmState[];
+    alreadyLoaded: boolean;
+    aoiInformation: AoiInformation;
 }
-interface Props {
+
+interface OwnProps {
     className?: string;
 }
+
+interface Params {
+    alreadyLoaded?: boolean;
+    setFirstLoad?: () => void;
+    setPosmStatus?: (posmStatus: PosmStatus) => void;
+    setAoiInformation?: (aoiInformation: AoiInformation) => void;
+    delay?: number;
+}
+
+interface Response {
+    aoi: AoiInformation;
+    state: keyof typeof PosmStateEnum;
+    isCurrentStateComplete: boolean;
+    hasErrored: boolean;
+}
+
+type Props = NewProps<OwnProps, Params>;
+
+const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
+    currentAoiGet: {
+        url: '/replay-tool/',
+        method: methods.GET,
+        onMount: true,
+        options: ({ params }) => {
+            if (!params || !params.delay) {
+                return undefined;
+            }
+            return {
+                delay: params.delay,
+            };
+        },
+        onSuccess: ({
+            params,
+            response,
+            props: {
+                requests: { currentAoiGet },
+            },
+        }) => {
+            if (!params) {
+                return;
+            }
+            const {
+                aoi: {
+                    name,
+                    description,
+                    bounds,
+                    dateCloned,
+                    localChangesetsCount,
+                    localElementsCount,
+                    totalConflictingElements,
+                    totalResolvedElements,
+                },
+                state,
+                isCurrentStateComplete,
+                hasErrored,
+            } = response as Response;
+
+            const {
+                alreadyLoaded,
+                setFirstLoad,
+                setPosmStatus,
+                setAoiInformation,
+            } = params;
+
+            if (!alreadyLoaded && setFirstLoad) {
+                setFirstLoad();
+            }
+
+            if (!setPosmStatus) {
+                return;
+            }
+
+            setPosmStatus({
+                state: PosmStateEnum[state],
+                isCurrentStateComplete,
+                hasErrored,
+            });
+
+            if (!setAoiInformation) {
+                return;
+            }
+
+            setAoiInformation({
+                name,
+                description,
+                area: bounds && (area(bboxPolygon(bounds)) / 1000000),
+                bounds,
+                dateCloned,
+                localChangesetsCount,
+                nodesCount: localElementsCount?.nodesCount,
+                waysCount: localElementsCount?.waysCount,
+                relationsCount: localElementsCount?.relationsCount,
+                totalResolvedElements,
+                totalConflictingElements,
+            });
+
+            currentAoiGet.do({
+                alreadyLoaded: true,
+                delay: AOI_POLL_TIME,
+            });
+        },
+    },
+    triggerReplayTool: {
+        url: '/trigger/',
+        method: methods.POST,
+        onSuccess: ({ params }) => {
+            if (!params || !params.setPosmStatus) {
+                return;
+            }
+            params.setPosmStatus({
+                state: PosmStateEnum.gathering_changesets,
+                isCurrentStateComplete: false,
+                hasErrored: false,
+            });
+        },
+    },
+    retriggerReplayTool: {
+        url: '/re-trigger/',
+        method: methods.POST,
+        onSuccess: ({ params }) => {
+            if (!params || !params.setPosmStatus) {
+                return;
+            }
+            params.setPosmStatus({
+                state: PosmStateEnum.gathering_changesets,
+                isCurrentStateComplete: false,
+                hasErrored: false,
+            });
+        },
+    },
+};
 
 class Dashboard extends React.PureComponent<Props, State> {
     public constructor(props: Props) {
         super(props);
+
+        const {
+            requests: {
+                currentAoiGet,
+            },
+        } = this.props;
+
+        currentAoiGet.setDefaultParams({
+            setAoiInformation: this.setAoiInformation,
+            setFirstLoad: this.setFirstLoad,
+            setPosmStatus: this.setPosmStatus,
+            alreadyLoaded: false,
+        });
 
         this.state = {
             posmStatus: {
@@ -120,73 +312,74 @@ class Dashboard extends React.PureComponent<Props, State> {
                 isCurrentStateComplete: true,
                 hasErrored: false,
             },
+            aoiInformation: {
+                name: '-',
+                description: '-',
+                area: 0,
+                dateCloned: undefined,
+                bounds: undefined,
+                localChangesetsCount: 0,
+                nodesCount: 0,
+                waysCount: 0,
+                relationsCount: 0,
+            },
             posmStates: [
                 { id: PosmStateEnum.not_triggered, name: 'Not Triggered', hidden: true },
                 { id: PosmStateEnum.gathering_changesets, name: 'Gathering Changesets' },
                 { id: PosmStateEnum.extracting_upstream_aoi, name: 'Extracting Upstream AOI' },
                 { id: PosmStateEnum.extracting_local_aoi, name: 'Extracting Local AOI' },
-                { id: PosmStateEnum.filtering_referenced_osm_elements, name: 'Identifying conflicts' },
+                { id: PosmStateEnum.detecting_conflicts, name: 'Identifying conflicts' },
+                { id: PosmStateEnum.creating_geojsons, name: 'Creating GeoJSONs' },
                 { id: PosmStateEnum.conflicts, name: 'Conflicts identified', hidden: true },
                 { id: PosmStateEnum.resolved, name: 'Conflicts resolved', hidden: true },
                 { id: PosmStateEnum.push_conflicts, name: 'Pushing conflicts', hidden: true },
                 { id: PosmStateEnum.pushed_upstream, name: 'Pushing resolved data to OSM', hidden: true },
             ],
+            alreadyLoaded: false,
         };
     }
 
+    private setFirstLoad = () => {
+        this.setState({ alreadyLoaded: true });
+    }
+
+    private handlePushToUpstreamButton = () => {
+        console.warn('auth action goes here');
+    }
+
+    private createMapOptions = memoize((bounds?: Bounds) => {
+        if (!bounds) {
+            return {};
+        }
+        // const centerPoint = center(bboxPolygon(bounds));
+        return {
+            bounds,
+            zoomLevel: 3,
+            // NOTE: we may not need center if we have bounds
+            // center: centerPoint,
+        };
+    });
+
+    private setAoiInformation = (aoiInformation: AoiInformation) => {
+        this.setState({ aoiInformation });
+    }
+
+    private setPosmStatus = (posmStatus: PosmStatus) => {
+        this.setState({ posmStatus });
+    }
+
     private handleStartButtonClick = () => {
-        this.setState({
-            posmStatus: { state: PosmStateEnum.gathering_changesets },
-        });
-        setTimeout(
-            () => {
-                this.setState({
-                    posmStatus: { state: PosmStateEnum.extracting_upstream_aoi },
-                });
-            },
-            1000 * speed,
-        );
-        setTimeout(
-            () => {
-                this.setState({
-                    posmStatus: { state: PosmStateEnum.extracting_local_aoi },
-                });
-            },
-            2000 * speed,
-        );
-        setTimeout(
-            () => {
-                this.setState({
-                    posmStatus: { state: PosmStateEnum.filtering_referenced_osm_elements },
-                });
-            },
-            4000 * speed,
-        );
-        setTimeout(
-            () => {
-                this.setState({
-                    posmStatus: {
-                        state: PosmStateEnum.filtering_referenced_osm_elements,
-                        hasErrored: true,
-                    },
-                });
-            },
-            5000 * speed,
-        );
+        const {
+            requests: { triggerReplayTool },
+        } = this.props;
+        triggerReplayTool.do({ setPosmStatus: this.setPosmStatus });
     }
 
     private handleRetryButtonClick = () => {
-        this.setState({
-            posmStatus: { state: PosmStateEnum.filtering_referenced_osm_elements },
-        });
-        setTimeout(
-            () => {
-                this.setState({
-                    posmStatus: { state: PosmStateEnum.conflicts },
-                });
-            },
-            3000 * speed,
-        );
+        const {
+            requests: { retriggerReplayTool },
+        } = this.props;
+        retriggerReplayTool.do({ setPosmStatus: this.setPosmStatus });
     }
 
     /*
@@ -199,10 +392,6 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     private handleResolveConflictButtonClick = () => {
         navigate(pathNames.conflictResolution);
-    }
-
-    private handlePushToUpstreamButton = () => {
-        console.log('Push to upstream');
     }
 
     private getVisiblePosmStates = memoize((posmStates: PosmState[]) => (
@@ -218,12 +407,12 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     private taskItemKeySelector = (item: PosmState) => item.id;
 
-    private taskItemRendererParams = (key: PosmStateEnum, value: PosmState) => {
+    private taskItemRendererParams = (_: PosmStateEnum, value: PosmState) => {
         const {
             posmStatus: {
                 state,
-                isCurrentStateComplete,
                 hasErrored,
+                isCurrentStateComplete,
             },
         } = this.state;
 
@@ -239,7 +428,6 @@ class Dashboard extends React.PureComponent<Props, State> {
         }
 
         return {
-            className: styles.tasksItem,
             status: stateStatus,
             label: value.name,
         };
@@ -248,74 +436,92 @@ class Dashboard extends React.PureComponent<Props, State> {
     public render() {
         const {
             className,
+            requests: {
+                currentAoiGet: { pending },
+            },
         } = this.props;
+
         const {
+            aoiInformation: {
+                bounds,
+                totalResolvedElements,
+                totalConflictingElements,
+                name,
+                description,
+                area: aoiArea,
+                dateCloned,
+                localChangesetsCount,
+                nodesCount,
+                waysCount,
+                relationsCount,
+            },
             posmStatus,
             posmStates,
+            alreadyLoaded,
         } = this.state;
-
-        const aoi = {
-            name: 'Jawalakhel',
-            description: 'It is best known for its rich cultural heritage, particularly its tradition of arts and crafts. It is called city of festival and feast, fine ancient art, making of metallic and stone carving statue.',
-            area: 12000,
-            dateExtracted: '2019-12-02',
-            bounds: lalitpurBounds,
-            totalChangesets: 13,
-            nodes: 12121,
-            ways: 1938,
-            relations: 12,
-        };
 
         const notStartedStep = isNotStarted(posmStatus.state);
         const conflictedStep = isConflicted(posmStatus.state);
         const analyzing = isAnalyzing(posmStatus.state);
         const resolvedStep = isResolved(posmStatus.state);
+        const mapOptions = this.createMapOptions(bounds);
 
-        const conflict = {
-            resolvedCount: 3,
-            totalCount: 35,
-        };
-        const conflictProgress = 100 * (conflict.resolvedCount / conflict.totalCount);
-        const resolveDisabled = conflict.totalCount !== conflict.resolvedCount;
+        let conflictProgress = 0;
+        if (totalResolvedElements && totalConflictingElements) {
+            conflictProgress = 100 * (totalResolvedElements / totalConflictingElements);
+        }
+        const resolveDisabled = totalConflictingElements !== totalResolvedElements;
 
         return (
             <div className={_cs(className, styles.dashboard)}>
                 <div className={styles.sidebar}>
+                    {(!alreadyLoaded && pending) && <LoadingAnimation />}
                     <header className={styles.header}>
                         <h2 className={styles.heading}>
-                            { aoi.name }
+                            { name }
                         </h2>
                         <div
                             className={styles.description}
-                            title={aoi.description}
+                            title={description}
                         >
-                            {aoi.description}
+                            {description}
                         </div>
                     </header>
                     <div className={styles.details}>
                         <TextOutput
                             label="Area"
-                            value={aoi.area}
+                            value={(
+                                <Numeral
+                                    value={aoiArea}
+                                    precision={2}
+                                    suffix=" sq. km"
+                                />
+                            )}
                         />
                         <TextOutput
-                            label="Date extracted"
-                            value={aoi.dateExtracted}
+                            label="Date cloned"
+                            value={(
+                                <FormattedDate
+                                    mode="dd-MM-yyyy"
+                                    value={dateCloned}
+                                />
+                            )}
                         />
                         <TextOutput
                             label="Local changesets"
-                            value={aoi.totalChangesets}
+                            value={localChangesetsCount}
                         />
                         <TextOutput
                             label="Nodes"
-                            value={aoi.nodes}
+                            value={nodesCount}
                         />
                         <TextOutput
                             label="Ways"
-                            value={aoi.ways}
+                            value={waysCount}
                         />
                         <TextOutput
                             label="Relations"
-                            value={aoi.relations}
+                            value={relationsCount}
                         />
                     </div>
 
@@ -352,7 +558,9 @@ class Dashboard extends React.PureComponent<Props, State> {
                             {analyzing && (
                                 <ProgressBar
                                     className={styles.progressBar}
-                                    progress={this.getPosmStateProgress(posmStates, posmStatus)}
+                                    progress={
+                                        this.getPosmStateProgress(posmStates, posmStatus)
+                                    }
                                 />
                             )}
                             {(analyzing && posmStatus.hasErrored) && (
@@ -380,8 +588,8 @@ class Dashboard extends React.PureComponent<Props, State> {
                             />
                             <ConflictStatus
                                 className={styles.conflictStatus}
-                                total={conflict.totalCount}
-                                resolved={conflict.resolvedCount}
+                                total={totalConflictingElements}
+                                resolved={totalResolvedElements}
                             />
                             <div className={styles.actions}>
                                 <Button
@@ -422,7 +630,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     navControlShown
                 >
                     <MapBounds
-                        bounds={mapOptions.bounds}
+                        bounds={bounds}
                         padding={50}
                     />
                     <MapContainer
@@ -434,4 +642,6 @@ class Dashboard extends React.PureComponent<Props, State> {
     }
 }
 
-export default Dashboard;
+export default createConnectedRequestCoordinator<OwnProps>()(
+    createRequestClient(requestOptions)(Dashboard),
+);
