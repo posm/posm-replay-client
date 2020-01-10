@@ -43,12 +43,6 @@ const routeSettings: SomeRoute[] = [
         navbar: true,
     },
     {
-        path: '/landing/',
-        name: 'landing',
-        title: 'Landing',
-        load: () => import('../views/Landing'),
-    },
-    {
         name: 'fourHundredThree',
         title: '403',
         path: '/403/',

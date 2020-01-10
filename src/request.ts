@@ -24,8 +24,8 @@ export const getCookie = (name: string) => {
 
 interface Error {
     errors?: {
-        non_field_errors?: string[];
-        internal_non_field_errors?: string[];
+        nonFieldErrors?: string[];
+        internalNonFieldErrors?: string[];
         [key: string]: string[] | undefined;
     };
 }

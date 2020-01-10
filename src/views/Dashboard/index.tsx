@@ -3,11 +3,9 @@ import { _cs } from '@togglecorp/fujs';
 import memoize from 'memoize-one';
 import { navigate } from '@reach/router';
 import {
-    // center,
     bboxPolygon,
     area,
 } from '@turf/turf';
-import { authenticate } from '#utils/oauth';
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
@@ -165,11 +163,12 @@ interface Params {
     setFirstLoad?: () => void;
     setPosmStatus?: (posmStatus: PosmStatus) => void;
     setAoiInformation?: (aoiInformation: AoiInformation) => void;
+    delay?: number;
 }
 
 interface Response {
     aoi: AoiInformation;
-    state: PosmStateEnum;
+    state: keyof typeof PosmStateEnum;
     isCurrentStateComplete: boolean;
     hasErrored: boolean;
 }
@@ -181,6 +180,14 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
         url: '/replay-tool/',
         method: methods.GET,
         onMount: true,
+        options: ({ params }) => {
+            if (!params || !params.delay) {
+                return undefined;
+            }
+            return {
+                delay: params.delay,
+            };
+        },
         onSuccess: ({
             params,
             response,
@@ -223,8 +230,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             }
 
             setPosmStatus({
-                // TODO: Fix this
-                state: Number(PosmStateEnum[state]),
+                state: PosmStateEnum[state],
                 isCurrentStateComplete,
                 hasErrored,
             });
@@ -247,7 +253,10 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 totalConflictingElements,
             });
 
-            setTimeout(() => currentAoiGet.do({ alreadyLoaded: true }), AOI_POLL_TIME);
+            currentAoiGet.do({
+                alreadyLoaded: true,
+                delay: AOI_POLL_TIME,
+            });
         },
     },
     triggerReplayTool: {
@@ -335,7 +344,7 @@ class Dashboard extends React.PureComponent<Props, State> {
     }
 
     private handlePushToUpstreamButton = () => {
-        authenticate();
+        console.warn('auth action goes here');
     }
 
     private createMapOptions = memoize((bounds?: Bounds) => {
