@@ -1,0 +1,23 @@
+.configuration {
+    display: flex;
+    position: relative;
+    flex-direction: column;
+    max-width: 320px;
+    overflow: auto;
+
+    .first-part {
+        display: flex;
+        flex-direction: column;
+        padding: var(--spacing-large);
+    }
+    .second-part {
+        display: flex;
+        flex-direction: column;
+        padding: var(--spacing-large);
+    }
+    .actions {
+        display: flex;
+        align-items: flex-end;
+        padding: var(--spacing-large);
+    }
+}
