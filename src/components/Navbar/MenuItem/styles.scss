@@ -6,6 +6,7 @@
     cursor: pointer;
     padding: 0 var(--spacing-medium);
     text-decoration: none;
+    color: inherit;
 
     .menu-title {
         text-align: center;
@@ -19,6 +20,7 @@
     }
 
     &:hover {
+        text-decoration: none;
         color: var(--color-text-on-navbar-hover);
     }
 

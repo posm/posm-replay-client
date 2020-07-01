@@ -47,6 +47,10 @@
             color: var(--color-text-label);
         }
 
+        .link {
+            margin: calc(var(--spacing-medium) - var(--spacing-small)) var(--spacing-large);
+        }
+
         .progress {
             padding: calc(var(--spacing-large) - var(--spacing-medium));
 

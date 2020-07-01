@@ -45,7 +45,11 @@ body {
     a {
         outline: none;
         text-decoration: none;
-        color: inherit;
+        color: var(--color-accent);
+
+        &:hover {
+            text-decoration: underline;
+        }
     }
 
     h1,
