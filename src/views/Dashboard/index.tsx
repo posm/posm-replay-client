@@ -33,6 +33,7 @@ import {
     Bounds,
     ShapeType,
     ConflictElement,
+    ResolutionStatus,
     ElementGeoJSON,
 } from '#constants/types';
 
@@ -85,7 +86,7 @@ const areaFillLayerOptions: mapboxgl.Layer = {
             'match',
             ['get', 'resolution'],
             'resolved', 'green',
-            'partially-resolved', 'yellow',
+            'partially_resolved', 'yellow',
             'unresolved', 'red',
             'black',
         ],
@@ -109,7 +110,7 @@ const linePointOptions: mapboxgl.Layer = {
             'match',
             ['get', 'resolution'],
             'resolved', 'green',
-            'partially-resolved', 'yellow',
+            'partially_resolved', 'yellow',
             'unresolved', 'red',
             'black',
         ],
@@ -128,7 +129,7 @@ const lineLayerOptions: mapboxgl.Layer = {
             'match',
             ['get', 'resolution'],
             'resolved', 'green',
-            'partially-resolved', 'yellow',
+            'partially_resolved', 'yellow',
             'unresolved', 'red',
             'black',
         ],
@@ -145,7 +146,7 @@ const pointLayerOptions: mapboxgl.Layer = {
             'match',
             ['get', 'resolution'],
             'resolved', 'green',
-            'partially-resolved', 'yellow',
+            'partially_resolved', 'yellow',
             'unresolved', 'red',
             'black',
         ],
@@ -200,80 +201,58 @@ const getSeggregatedGeojsons = (
     const lineFeatures: ElementGeoJSON[] = [];
     const areaFeatures: ElementGeoJSON[] = [];
 
+    function getFeatures(conflictElements: ConflictElement[], status: ResolutionStatus) {
+        const filteredConflictElements = conflictElements
+            .filter(element => element.status === status);
+
+        function getGeoJson(element: ConflictElement, elementStatus: ResolutionStatus) {
+            const geoJson = element.localGeojson && !doesObjectHaveNoData(element.localGeojson)
+                ? element.localGeojson
+                : element.originalGeojson;
+
+            return {
+                ...geoJson,
+                properties: {
+                    ...geoJson.properties,
+                    resolution: elementStatus,
+                },
+            };
+        }
+
+        const points: ElementGeoJSON[] = filteredConflictElements
+            .filter(element => getShapeType(element.originalGeojson) === 'point')
+            .map(element => getGeoJson(element, status));
+
+        const lines: ElementGeoJSON[] = filteredConflictElements
+            .filter(element => getShapeType(element.originalGeojson) === 'line')
+            .map(element => getGeoJson(element, status));
+
+        const areas: ElementGeoJSON[] = filteredConflictElements
+            .filter(element => getShapeType(element.originalGeojson) === 'area')
+            .map(element => getGeoJson(element, status));
+
+        return [points, lines, areas];
+    }
+
     if (isDefined(resolved?.results)) {
-        resolved.results.forEach((conflict) => {
-            if (
-                !conflict.localGeojson
-                || doesObjectHaveNoData(conflict.localGeojson)
-                || conflict.status !== 'resolved'
-            ) {
-                return;
-            }
-            const modifiedConflict = {
-                ...conflict.localGeojson,
-                properties: {
-                    ...conflict.localGeojson.properties,
-                    resolution: 'resolved',
-                },
-            };
-            if (getShapeType(conflict.localGeojson) === 'point') {
-                pointFeatures.push(modifiedConflict);
-            } else if (getShapeType(conflict.localGeojson) === 'line') {
-                lineFeatures.push(modifiedConflict);
-            } else if (getShapeType(conflict.localGeojson) === 'area') {
-                areaFeatures.push(modifiedConflict);
-            }
-        });
+        const [points, lines, areas] = getFeatures(resolved.results, 'resolved');
+        pointFeatures.push(...points);
+        lineFeatures.push(...lines);
+        areaFeatures.push(...areas);
     }
+
     if (isDefined(partiallyResolved?.results)) {
-        partiallyResolved.results.forEach((conflict) => {
-            if (
-                !conflict.localGeojson
-                || doesObjectHaveNoData(conflict.localGeojson)
-                || conflict.status !== 'partially_resolved'
-            ) {
-                return;
-            }
-            const modifiedConflict = {
-                ...conflict.localGeojson,
-                properties: {
-                    ...conflict.localGeojson.properties,
-                    resolution: 'partially-resolved',
-                },
-            };
-            if (getShapeType(conflict.localGeojson) === 'point') {
-                pointFeatures.push(modifiedConflict);
-            } else if (getShapeType(conflict.localGeojson) === 'line') {
-                lineFeatures.push(modifiedConflict);
-            } else if (getShapeType(conflict.localGeojson) === 'area') {
-                areaFeatures.push(modifiedConflict);
-            }
-        });
+        const [points, lines, areas] = getFeatures(partiallyResolved.results, 'partially_resolved');
+        pointFeatures.push(...points);
+        lineFeatures.push(...lines);
+        areaFeatures.push(...areas);
     }
+
     if (isDefined(unresolved?.results)) {
-        unresolved.results.forEach((conflict) => {
-            if (
-                !conflict.localGeojson
-                || doesObjectHaveNoData(conflict.localGeojson)
-                || conflict.status !== 'unresolved'
-            ) {
-                return;
-            }
-            const modifiedConflict = {
-                ...conflict.localGeojson,
-                properties: {
-                    ...conflict.localGeojson.properties,
-                    resolution: 'unresolved',
-                },
-            };
-            if (getShapeType(conflict.localGeojson) === 'point') {
-                pointFeatures.push(modifiedConflict);
-            } else if (getShapeType(conflict.localGeojson) === 'line') {
-                lineFeatures.push(modifiedConflict);
-            } else if (getShapeType(conflict.localGeojson) === 'area') {
-                areaFeatures.push(modifiedConflict);
-            }
-        });
+        const [points, lines, areas] = getFeatures(unresolved.results, 'unresolved');
+        pointFeatures.push(...points);
+        lineFeatures.push(...lines);
+        areaFeatures.push(...areas);
     }
     return ({
         pointGeojson: {
@@ -302,33 +281,6 @@ interface PosmStatus {
     isCurrentStateComplete?: boolean;
     hasErrored?: boolean;
 }
-
-/*
-const mapStyle: mapboxgl.MapboxOptions['style'] = {
-    version: 8,
-    name: 'Base Layer',
-    sources: {
-        mm: {
-            type: 'raster',
-            url: process.env.REACT_APP_OSM_LAYER_URL,
-            tileSize: 256,
-            // tileSize: 256,
-        },
-    },
-    layers: [
-        {
-            id: 'background',
-            type: 'background',
-            paint: { 'background-color': 'rgb(239, 239, 239)' },
-        },
-        {
-            id: 'mm_layer',
-            type: 'raster',
-            source: 'mm',
-        },
-    ],
-};
- */
 
 const mapStyle: mapboxgl.MapboxOptions['style'] = {
     version: 8,

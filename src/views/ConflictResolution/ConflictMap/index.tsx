@@ -150,7 +150,6 @@ if (process.env.REACT_APP_OSM_LAYER_URL) {
                     type: 'raster',
                     url: process.env.REACT_APP_OSM_LAYER_URL,
                     tileSize: 256,
-                    // tileSize: 256,
                 },
             },
             layers: [
