@@ -3,6 +3,7 @@ import { _cs } from '@togglecorp/fujs';
 import Faram, {
     requiredCondition,
 } from '@togglecorp/faram';
+import NonFieldErrors from '#rsci/NonFieldErrors';
 
 import PrimaryButton from '#rsca/Button/PrimaryButton';
 import TextInput from '#rsci/TextInput';
@@ -15,11 +16,16 @@ import {
     ClientAttributes,
 } from '#request';
 
+import styles from './styles.scss';
+
 interface OwnProps {
     className?: string;
 }
 interface Params{
-    setConfiguration: (faramValues: object) => void;
+    setConfiguration?: (faramValues: ConfigurationType) => void;
+    body?: unknown;
+    onSuccess?: () => void;
+    onFailure?: (faramErrors: object) => void;
 }
 type Props = NewProps<OwnProps, Params>;
 
@@ -31,11 +37,13 @@ interface State {
 
 interface ConfigurationType {
     id: number;
-    osmBaseUrl: string;
+
     posmDbHost: string;
     posmDbName: string;
     posmDbUser: string;
     posmDbPassword: string;
+
+    osmBaseUrl: string;
     aoiRoot: string;
     aoiName: string;
     osmosisDbHost: string;
@@ -66,22 +74,32 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 setConfiguration,
             } = params;
             if (setConfiguration) {
-                setConfiguration(response);
+                setConfiguration(response as ConfigurationType);
             }
         },
     },
     configurationPutRequest: {
         url: '/config/1/',
         method: methods.PUT,
-        body: ({ params }) => params.body,
+        body: ({ params }) => params && params.body,
         onSuccess: ({ params }) => {
-            if (params.onSuccess) {
+            if (params && params.onSuccess) {
                 params.onSuccess();
             }
         },
-        onFailure: ({ params }) => {
-            if (params.onFailure) {
-                params.onFailure();
+        onFailure: ({ params, error }) => {
+            if (params && params.onFailure) {
+                console.error(error);
+                params.onFailure({
+                    $internal: ['Some error occurred'],
+                });
+            }
+        },
+        onFatal: ({ params }) => {
+            if (params && params.onFailure) {
+                params.onFailure({
+                    $internal: ['Some error occurred'],
+                });
             }
         },
     },
@@ -185,8 +203,9 @@ class Configuration extends React.PureComponent<Props, State> {
         const pending = configGetPending || configPutPending;
 
         return (
-            <div>
+            <div className={styles.configuration}>
                 <Faram
+                    className={styles.container}
                     onChange={this.handleFaramChange}
                     onValidationFailure={this.handleFaramValidationFailure}
                     onValidationSuccess={this.handleFaramValidationSuccess}
@@ -195,7 +214,7 @@ class Configuration extends React.PureComponent<Props, State> {
                     error={faramErrors}
                     disabled={pending}
                 >
-                    <div>
+                    <div className={styles.firstPart}>
                         <TextInput
                             faramElementName="aoiName"
                             label="AOI Name"
@@ -204,7 +223,7 @@ class Configuration extends React.PureComponent<Props, State> {
                         />
                         <TextInput
                             faramElementName="originalAoiFileName"
-                            label="Original AOI FileName"
+                            label="AOI FileName"
                             hint="File name for original aoi[osm file located inside aoi along with manifest json]"
                             placeholder=""
                         />
@@ -228,24 +247,24 @@ class Configuration extends React.PureComponent<Props, State> {
                         />
                         <TextInput
                             faramElementName="requestTokenUrl"
-                            label="Request Token Url"
+                            label="OAuth Request Token Url"
                             hint="OSM OAuth api endpoint for request token"
                             placeholder=""
                         />
                         <TextInput
                             faramElementName="accessTokenUrl"
-                            label="Access Token Url"
+                            label="OAuth Access Token Url"
                             hint="OSM OAuth api endpoint for access token"
                             placeholder=""
                         />
                         <TextInput
                             faramElementName="authorizationUrl"
-                            label="Authorization Url"
+                            label="OAuth Authorization Url"
                             hint="OSM OAuth api endpoint for authorization"
                             placeholder=""
                         />
                     </div>
-                    <div>
+                    <div className={styles.secondPart}>
                         <TextInput
                             faramElementName="osmBaseUrl"
                             label="OSM Base Url"
@@ -254,25 +273,25 @@ class Configuration extends React.PureComponent<Props, State> {
                         />
                         <TextInput
                             faramElementName="posmDbHost"
-                            label="POSM DB Host"
+                            label="POSM Database Host"
                             hind="POSM's IP which listens to psql connections."
                             placeholder=""
                         />
                         <TextInput
                             faramElementName="posmDbName"
-                            label="POSM DB Name"
+                            label="POSM Database Name"
                             hint="OSM Database Name"
                             placeholder=""
                         />
                         <TextInput
                             faramElementName="posmDbUser"
-                            label="POSM DB User"
+                            label="POSM Database User"
                             hint="OSM Database User"
                             placeholder=""
                         />
                         <TextInput
                             faramElementName="posmDbPassword"
-                            label="POSM DB Password"
+                            label="POSM Database Password"
                             hint="OSM Database password"
                             placeholder=""
                         />
@@ -283,15 +302,15 @@ class Configuration extends React.PureComponent<Props, State> {
                             placeholder=""
                         />
                         <TextInput
-                            faramElementName="osmosisDbHost"
-                            label="Osmosis DB Host"
-                            hint="IP of POSM itself"
-                            placeholder=""
-                        />
-                        <TextInput
                             faramElementName="osmosisAoiRoot"
                             label="Osmosis AOI Root"
                             hint="Host AOI root location"
+                            placeholder=""
+                        />
+                        <TextInput
+                            faramElementName="osmosisDbHost"
+                            label="Osmosis Database Host"
+                            hint="IP of POSM itself"
                             placeholder=""
                         />
                         <TextInput
@@ -301,13 +320,16 @@ class Configuration extends React.PureComponent<Props, State> {
                             placeholder=""
                         />
                     </div>
-                    <PrimaryButton
-                        type="submit"
-                        pending={pending}
-                        disabled={pristine}
-                    >
-                        Apply Configuration
-                    </PrimaryButton>
+                    <NonFieldErrors faramElement />
+                    <div className={styles.actions}>
+                        <PrimaryButton
+                            type="submit"
+                            pending={pending}
+                            disabled={pristine}
+                        >
+                            Apply Configuration
+                        </PrimaryButton>
+                    </div>
                 </Faram>
             </div>
         );
