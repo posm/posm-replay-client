@@ -43,6 +43,13 @@ const routeSettings: SomeRoute[] = [
         navbar: true,
     },
     {
+        name: 'configuration',
+        title: 'Configuration',
+        path: '/configuration/',
+        load: () => import('../views/Configuration'),
+        navbar: true,
+    },
+    {
         name: 'fourHundredThree',
         title: '403',
         path: '/403/',

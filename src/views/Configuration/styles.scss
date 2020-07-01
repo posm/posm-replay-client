@@ -1,0 +1,36 @@
+.configuration {
+    position: relative;
+    overflow: auto;
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        margin: auto;
+        max-width: 500px;
+
+        .first-part {
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-large);
+
+            >* {
+                padding: var(--spacing-small) 0;
+            }
+        }
+        .second-part {
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-large);
+
+            >* {
+                padding: var(--spacing-small) 0;
+            }
+        }
+
+        .actions {
+            display: flex;
+            align-items: flex-end;
+            padding: var(--spacing-large);
+        }
+    }
+}
