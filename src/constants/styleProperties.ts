@@ -4,6 +4,7 @@ const styleProperties = {
     colorRed: '#d33f49',
     colorGreen: '#14a775',
     colorYellow: '#eb9316',
+    colorDarkerBlue: '#213341',
     // fontFamilySansSerif: 'Roboto',
     colorPrimary: 'var(--color-dark-blue)',
     // colorPrimaryLight: 'var(--color-blue)',
