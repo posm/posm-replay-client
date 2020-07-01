@@ -24,6 +24,11 @@
         color: var(--color-text-on-primary)!important;
 
         .tc-v2-button-spinner {
+            color: var(--color-text-disabled)!important;
+        }
+
+        &:hover {
+            background-color: var(--color-darker-blue)!important;
             color: var(--color-text-on-primary)!important;
         }
 

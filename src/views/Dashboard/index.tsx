@@ -1,5 +1,9 @@
 import React from 'react';
-import { _cs } from '@togglecorp/fujs';
+import {
+    _cs,
+    isDefined,
+    doesObjectHaveNoData,
+} from '@togglecorp/fujs';
 import memoize from 'memoize-one';
 import { navigate } from '@reach/router';
 import {
@@ -9,10 +13,13 @@ import {
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
+import Checkbox from '#rsu/../v2/Input/Checkbox';
 
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
+import MapSource from '#re-map/MapSource';
+import MapLayer from '#re-map/MapSource/MapLayer';
 
 import ConflictStatus from '#components/ConflictStatus';
 import TextOutput from '#components/TextOutput';
@@ -22,7 +29,12 @@ import Info from '#components/Info';
 import LoadingAnimation from '#rscv/LoadingAnimation';
 import ProgressBar from '#components/ProgressBar';
 import TaskItem, { Status } from '#components/TaskItem';
-import { Bounds } from '#constants/types';
+import {
+    Bounds,
+    ShapeType,
+    ConflictElement,
+    ElementGeoJSON,
+} from '#constants/types';
 
 import {
     createConnectedRequestCoordinator,
@@ -60,6 +72,224 @@ const isAnalyzing = (state: PosmStateEnum) => (
 );
 const isConflicted = (state: PosmStateEnum) => state === PosmStateEnum.conflicts;
 const isResolved = (state: PosmStateEnum) => state === PosmStateEnum.resolved;
+
+const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
+    type: 'geojson',
+};
+
+const areaFillLayerOptions: mapboxgl.Layer = {
+    id: 'not-required',
+    type: 'fill',
+    paint: {
+        'fill-color': [
+            'match',
+            ['get', 'resolution'],
+            'resolved', 'green',
+            'partially-resolved', 'yellow',
+            'unresolved', 'red',
+            'black',
+        ],
+        'fill-opacity': 0.5,
+    },
+};
+const areaOutlineLayerOptions: mapboxgl.Layer = {
+    id: 'not-required',
+    type: 'line',
+    paint: {
+        'line-color': 'black',
+        'line-opacity': 0.8,
+        'line-width': 3,
+    },
+};
+const linePointOptions: mapboxgl.Layer = {
+    id: 'not-required',
+    type: 'circle',
+    paint: {
+        'circle-color': [
+            'match',
+            ['get', 'resolution'],
+            'resolved', 'green',
+            'partially-resolved', 'yellow',
+            'unresolved', 'red',
+            'black',
+        ],
+        'circle-radius': 3,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': 'black',
+        'circle-stroke-opacity': 0.5,
+    },
+};
+
+const lineLayerOptions: mapboxgl.Layer = {
+    id: 'not-required',
+    type: 'line',
+    paint: {
+        'line-color': [
+            'match',
+            ['get', 'resolution'],
+            'resolved', 'green',
+            'partially-resolved', 'yellow',
+            'unresolved', 'red',
+            'black',
+        ],
+        'line-opacity': 0.8,
+        'line-width': 5,
+    },
+};
+
+const pointLayerOptions: mapboxgl.Layer = {
+    id: 'not-required',
+    type: 'circle',
+    paint: {
+        'circle-color': [
+            'match',
+            ['get', 'resolution'],
+            'resolved', 'green',
+            'partially-resolved', 'yellow',
+            'unresolved', 'red',
+            'black',
+        ],
+        'circle-radius': 8,
+        'circle-opacity': 0.5,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': 'black',
+        'circle-stroke-opacity': 0.8,
+    },
+};
+
+const legendItems = [
+    {
+        color: 'red',
+        title: 'Unresolved',
+    },
+    {
+        color: 'yellow',
+        title: 'Partially Resolved',
+    },
+    {
+        color: 'green',
+        title: 'Resolved',
+    },
+];
+
+function getShapeType(geoJson: ElementGeoJSON): ShapeType {
+    const { geometry: { type } } = geoJson;
+    if (type === 'Point' || type === 'MultiPoint') {
+        return 'point';
+    }
+    if (type === 'LineString' || type === 'MultiLineString') {
+        return 'line';
+    }
+    if (type === 'Polygon' || type === 'MultiPolygon') {
+        return 'area';
+    }
+
+    return 'point';
+}
+
+interface ConflictsResponse {
+    results: ConflictElement[];
+}
+
+const getSeggregatedGeojsons = (
+    resolved: ConflictsResponse,
+    partiallyResolved: ConflictsResponse,
+    unresolved: ConflictsResponse,
+) => {
+    const pointFeatures: ElementGeoJSON[] = [];
+    const lineFeatures: ElementGeoJSON[] = [];
+    const areaFeatures: ElementGeoJSON[] = [];
+
+    if (isDefined(resolved?.results)) {
+        resolved.results.forEach((conflict) => {
+            if (
+                !conflict.localGeojson
+                || doesObjectHaveNoData(conflict.localGeojson)
+                || conflict.status !== 'resolved'
+            ) {
+                return;
+            }
+            const modifiedConflict = {
+                ...conflict.localGeojson,
+                properties: {
+                    ...conflict.localGeojson.properties,
+                    resolution: 'resolved',
+                },
+            };
+            if (getShapeType(conflict.localGeojson) === 'point') {
+                pointFeatures.push(modifiedConflict);
+            } else if (getShapeType(conflict.localGeojson) === 'line') {
+                lineFeatures.push(modifiedConflict);
+            } else if (getShapeType(conflict.localGeojson) === 'area') {
+                areaFeatures.push(modifiedConflict);
+            }
+        });
+    }
+    if (isDefined(partiallyResolved?.results)) {
+        partiallyResolved.results.forEach((conflict) => {
+            if (
+                !conflict.localGeojson
+                || doesObjectHaveNoData(conflict.localGeojson)
+                || conflict.status !== 'partially_resolved'
+            ) {
+                return;
+            }
+            const modifiedConflict = {
+                ...conflict.localGeojson,
+                properties: {
+                    ...conflict.localGeojson.properties,
+                    resolution: 'partially-resolved',
+                },
+            };
+            if (getShapeType(conflict.localGeojson) === 'point') {
+                pointFeatures.push(modifiedConflict);
+            } else if (getShapeType(conflict.localGeojson) === 'line') {
+                lineFeatures.push(modifiedConflict);
+            } else if (getShapeType(conflict.localGeojson) === 'area') {
+                areaFeatures.push(modifiedConflict);
+            }
+        });
+    }
+    if (isDefined(unresolved?.results)) {
+        unresolved.results.forEach((conflict) => {
+            if (
+                !conflict.localGeojson
+                || doesObjectHaveNoData(conflict.localGeojson)
+                || conflict.status !== 'unresolved'
+            ) {
+                return;
+            }
+            const modifiedConflict = {
+                ...conflict.localGeojson,
+                properties: {
+                    ...conflict.localGeojson.properties,
+                    resolution: 'unresolved',
+                },
+            };
+            if (getShapeType(conflict.localGeojson) === 'point') {
+                pointFeatures.push(modifiedConflict);
+            } else if (getShapeType(conflict.localGeojson) === 'line') {
+                lineFeatures.push(modifiedConflict);
+            } else if (getShapeType(conflict.localGeojson) === 'area') {
+                areaFeatures.push(modifiedConflict);
+            }
+        });
+    }
+    return ({
+        pointGeojson: {
+            type: 'FeatureCollection',
+            features: pointFeatures,
+        },
+        lineGeojson: {
+            type: 'FeatureCollection',
+            features: lineFeatures,
+        },
+        areaGeojson: {
+            type: 'FeatureCollection',
+            features: areaFeatures,
+        },
+    });
+};
 
 interface PosmState {
     id: PosmStateEnum;
@@ -135,14 +365,15 @@ interface LocalElementsCount {
 interface AoiInformation {
     name: string;
     description: string;
-    bounds?: Bounds;
     area?: number;
     dateCloned?: string;
+    bounds?: Bounds;
     localChangesetsCount?: number;
     nodesCount?: number;
     waysCount?: number;
     relationsCount?: number;
     totalResolvedElements?: number;
+    totalPartiallyResolvedElements?: number;
     totalConflictingElements?: number;
     localElementsCount?: LocalElementsCount;
 }
@@ -152,6 +383,10 @@ interface State {
     posmStates: PosmState[];
     alreadyLoaded: boolean;
     aoiInformation: AoiInformation;
+    totalResolvedElements?: number;
+    totalPartiallyResolvedElements?: number;
+    bounds?: Bounds;
+    conflictsVisibility: boolean;
 }
 
 interface OwnProps {
@@ -208,6 +443,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                     localElementsCount,
                     totalConflictingElements,
                     totalResolvedElements,
+                    totalPartiallyResolvedElements,
                 },
                 state,
                 isCurrentStateComplete,
@@ -242,14 +478,15 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
             setAoiInformation({
                 name,
                 description,
-                area: bounds && (area(bboxPolygon(bounds)) / 1000000),
                 bounds,
+                area: bounds && (area(bboxPolygon(bounds)) / 1000000),
                 dateCloned,
                 localChangesetsCount,
                 nodesCount: localElementsCount?.nodesCount,
                 waysCount: localElementsCount?.waysCount,
                 relationsCount: localElementsCount?.relationsCount,
                 totalResolvedElements,
+                totalPartiallyResolvedElements,
                 totalConflictingElements,
             });
 
@@ -258,6 +495,18 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 delay: AOI_POLL_TIME,
             });
         },
+    },
+    unresolvedConflictsGet: {
+        url: '/unresolved-elements/',
+        method: methods.GET,
+    },
+    partiallyResolvedConflictsGet: {
+        url: '/partial-resolved-elements/',
+        method: methods.GET,
+    },
+    resolvedConflictsGet: {
+        url: '/resolved-elements/',
+        method: methods.GET,
     },
     triggerReplayTool: {
         url: '/trigger/',
@@ -307,6 +556,8 @@ class Dashboard extends React.PureComponent<Props, State> {
         });
 
         this.state = {
+            bounds: undefined,
+            conflictsVisibility: false,
             posmStatus: {
                 state: PosmStateEnum.not_triggered,
                 isCurrentStateComplete: true,
@@ -317,7 +568,6 @@ class Dashboard extends React.PureComponent<Props, State> {
                 description: '-',
                 area: 0,
                 dateCloned: undefined,
-                bounds: undefined,
                 localChangesetsCount: 0,
                 nodesCount: 0,
                 waysCount: 0,
@@ -361,18 +611,83 @@ class Dashboard extends React.PureComponent<Props, State> {
     });
 
     private setAoiInformation = (aoiInformation: AoiInformation) => {
-        this.setState({ aoiInformation });
+        const {
+            conflictsVisibility,
+            bounds,
+            totalResolvedElements,
+            totalPartiallyResolvedElements,
+        } = this.state;
+
+        const {
+            requests: {
+                unresolvedConflictsGet,
+                partiallyResolvedConflictsGet,
+                resolvedConflictsGet,
+            },
+        } = this.props;
+
+        const {
+            bounds: newBounds,
+            totalResolvedElements: newTotalResolvedElements,
+            totalPartiallyResolvedElements: newTotalPartiallyResolvedElements,
+        } = aoiInformation;
+
+        if (
+            conflictsVisibility
+            && (
+                totalResolvedElements !== newTotalResolvedElements
+                || totalPartiallyResolvedElements !== newTotalPartiallyResolvedElements
+            )
+        ) {
+            unresolvedConflictsGet.do();
+            partiallyResolvedConflictsGet.do();
+            resolvedConflictsGet.do();
+        }
+
+        if (JSON.stringify(bounds) !== JSON.stringify(newBounds)) {
+            this.setState({
+                bounds: aoiInformation.bounds,
+                aoiInformation,
+                totalResolvedElements: newTotalResolvedElements,
+                totalPartiallyResolvedElements: newTotalPartiallyResolvedElements,
+            });
+        } else {
+            this.setState({
+                aoiInformation,
+                totalResolvedElements: newTotalResolvedElements,
+                totalPartiallyResolvedElements: newTotalPartiallyResolvedElements,
+            });
+        }
     }
 
     private setPosmStatus = (posmStatus: PosmStatus) => {
         this.setState({ posmStatus });
     }
 
+    private getSeggregatedGeojsons = memoize(getSeggregatedGeojsons);
+
     private handleStartButtonClick = () => {
         const {
             requests: { triggerReplayTool },
         } = this.props;
         triggerReplayTool.do({ setPosmStatus: this.setPosmStatus });
+    }
+
+    private handleShowConflictsButtonClick = (show: boolean) => {
+        const {
+            requests: {
+                unresolvedConflictsGet,
+                partiallyResolvedConflictsGet,
+                resolvedConflictsGet,
+            },
+        } = this.props;
+
+        if (show) {
+            unresolvedConflictsGet.do();
+            partiallyResolvedConflictsGet.do();
+            resolvedConflictsGet.do();
+        }
+        this.setState({ conflictsVisibility: show });
     }
 
     private handleRetryButtonClick = () => {
@@ -438,12 +753,20 @@ class Dashboard extends React.PureComponent<Props, State> {
             className,
             requests: {
                 currentAoiGet: { pending },
+                unresolvedConflictsGet: {
+                    response: unresolvedConflictsResponse,
+                },
+                resolvedConflictsGet: {
+                    response: resolvedConflictsResponse,
+                },
+                partiallyResolvedConflictsGet: {
+                    response: partiallyResolvedConflictsResponse,
+                },
             },
         } = this.props;
 
         const {
             aoiInformation: {
-                bounds,
                 totalResolvedElements,
                 totalConflictingElements,
                 name,
@@ -455,9 +778,11 @@ class Dashboard extends React.PureComponent<Props, State> {
                 waysCount,
                 relationsCount,
             },
+            bounds,
             posmStatus,
             posmStates,
             alreadyLoaded,
+            conflictsVisibility,
         } = this.state;
 
         const notStartedStep = isNotStarted(posmStatus.state);
@@ -471,6 +796,16 @@ class Dashboard extends React.PureComponent<Props, State> {
             conflictProgress = 100 * (totalResolvedElements / totalConflictingElements);
         }
         const resolveDisabled = totalConflictingElements !== totalResolvedElements;
+
+        const {
+            lineGeojson,
+            pointGeojson,
+            areaGeojson,
+        } = this.getSeggregatedGeojsons(
+            resolvedConflictsResponse as ConflictsResponse,
+            partiallyResolvedConflictsResponse as ConflictsResponse,
+            unresolvedConflictsResponse as ConflictsResponse,
+        );
 
         return (
             <div className={_cs(className, styles.dashboard)}>
@@ -592,13 +927,19 @@ class Dashboard extends React.PureComponent<Props, State> {
                                 resolved={totalResolvedElements}
                             />
                             <div className={styles.actions}>
+                                <Checkbox
+                                    className={styles.checkboxOne}
+                                    label="Show Conflicts in Map"
+                                    value={conflictsVisibility}
+                                    onChange={this.handleShowConflictsButtonClick}
+                                />
                                 <Button
                                     buttonType="button-primary"
                                     className={styles.resolveConflictButton}
                                     onClick={this.handleResolveConflictButtonClick}
                                     // disabled={resolveDisabled}
                                 >
-                                    Show Conflicts
+                                    Go to Conflicts
                                 </Button>
                             </div>
                             {resolveDisabled && (
@@ -612,6 +953,12 @@ class Dashboard extends React.PureComponent<Props, State> {
                     {resolvedStep && (
                         <div className={styles.resolution}>
                             <div className={styles.actions}>
+                                <Checkbox
+                                    className={styles.checkboxOne}
+                                    label="Show Conflicts in Map"
+                                    value={conflictsVisibility}
+                                    onChange={this.handleShowConflictsButtonClick}
+                                />
                                 <Button
                                     buttonType="button-primary"
                                     className={styles.pushToUpstreamButton}
@@ -633,9 +980,73 @@ class Dashboard extends React.PureComponent<Props, State> {
                         bounds={bounds}
                         padding={50}
                     />
-                    <MapContainer
-                        className={styles.map}
-                    />
+                    <MapContainer className={styles.map} />
+                    {conflictsVisibility && areaGeojson && (
+                        <MapSource
+                            sourceKey="area"
+                            geoJson={areaGeojson}
+                            sourceOptions={sourceOptions}
+                        >
+                            <MapLayer
+                                layerKey="fill"
+                                layerOptions={areaFillLayerOptions}
+                            />
+                            <MapLayer
+                                layerKey="outline"
+                                layerOptions={areaOutlineLayerOptions}
+                            />
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={linePointOptions}
+                            />
+                        </MapSource>
+                    )}
+                    {conflictsVisibility && lineGeojson && (
+                        <MapSource
+                            sourceKey="line"
+                            geoJson={lineGeojson}
+                            sourceOptions={sourceOptions}
+                        >
+                            <MapLayer
+                                layerKey="outline"
+                                layerOptions={lineLayerOptions}
+                            />
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={linePointOptions}
+                            />
+                        </MapSource>
+                    )}
+                    {conflictsVisibility && pointGeojson && (
+                        <MapSource
+                            sourceKey="point"
+                            geoJson={pointGeojson}
+                            sourceOptions={sourceOptions}
+                        >
+                            <MapLayer
+                                layerKey="circle"
+                                layerOptions={pointLayerOptions}
+                            />
+                        </MapSource>
+                    )}
+                    {conflictsVisibility && (
+                        <div className={styles.legend}>
+                            {legendItems.map(legendItem => (
+                                <div
+                                    key={legendItem.title}
+                                    className={styles.legendItem}
+                                >
+                                    <span
+                                        className={styles.legendColor}
+                                        style={{ backgroundColor: legendItem.color }}
+                                    />
+                                    <span className={styles.legendTitle}>
+                                        {legendItem.title}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </Map>
             </div>
         );

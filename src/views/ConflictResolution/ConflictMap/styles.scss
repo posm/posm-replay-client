@@ -27,6 +27,13 @@
         bottom: var(--spacing-small);
         left: var(--spacing-small);
         z-index: var(--map-elements-z-index);
+        border: var(--width-separator-thin) solid var(--color-primary);
+        background-color: var(--color-foreground);
+
+        .icon {
+            padding: 0;
+            font-size: var(--font-size-large);
+        }
     }
 
     .select-button {
@@ -34,5 +41,19 @@
         top: 0;
         left: 0;
         z-index: var(--map-elements-z-index);
+    }
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+
+    .layer-button {
+        border: none!important;
+        text-align: left;
+
+        &.active {
+            color: var(--color-accent);
+        }
     }
 }

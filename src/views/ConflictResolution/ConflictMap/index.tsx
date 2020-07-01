@@ -1,7 +1,7 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
-import SegmentInput from '#rsci/SegmentInput';
+import DropdownMenu from '#rsca/DropdownMenu';
 import Button from '#rsu/../v2/Action/Button';
 
 import Map from '#re-map';
@@ -14,7 +14,7 @@ import { ElementGeoJSON, ShapeType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
 
-type StyleNames = 'Wikimedia' | 'OSM' | 'World Imagery' | 'Humanitarian';
+type StyleNames = 'Wikimedia' | 'OSM' | 'World Imagery' | 'Humanitarian' | 'Offline';
 
 interface MapStyle {
     name: StyleNames;
@@ -139,6 +139,35 @@ const mapStyles: MapStyle[] = [
         },
     },
 ];
+
+if (process.env.REACT_APP_OSM_LAYER_URL) {
+    mapStyles.push({
+        name: 'Offline',
+        data: {
+            version: 8,
+            sources: {
+                mm: {
+                    type: 'raster',
+                    url: process.env.REACT_APP_OSM_LAYER_URL,
+                    tileSize: 256,
+                    // tileSize: 256,
+                },
+            },
+            layers: [
+                {
+                    id: 'background',
+                    type: 'background',
+                    paint: { 'background-color': 'rgb(239, 239, 239)' },
+                },
+                {
+                    id: 'mm_layer',
+                    type: 'raster',
+                    source: 'mm',
+                },
+            ],
+        },
+    });
+}
 
 const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
     type: 'geojson',
@@ -336,6 +365,7 @@ class ConflictMap extends React.PureComponent<Props, State> {
                             />
                         </MapSource>
                     )}
+                    {/*
                     <SegmentInput
                         className={styles.layerSwitcher}
                         showLabel={false}
@@ -346,6 +376,30 @@ class ConflictMap extends React.PureComponent<Props, State> {
                         options={mapStyles}
                         onChange={this.handleStyleChange}
                     />
+                      */}
+                    <DropdownMenu
+                        className={styles.layerSwitcher}
+                        dropdownIconClassName={styles.icon}
+                        dropdownClassName={styles.container}
+                        dropdownIcon="layers"
+                        closeOnClick
+                    >
+                        {mapStyles.map(mapStyleItem => (
+                            <Button
+                                key={styleKeySelector(mapStyleItem)}
+                                className={_cs(
+                                    styles.layerButton,
+                                    selectedStyle === styleKeySelector(mapStyleItem)
+                                        && styles.active,
+                                )}
+                                onClick={() => this.handleStyleChange(
+                                    styleKeySelector(mapStyleItem),
+                                )}
+                            >
+                                {styleLabelSelector(mapStyleItem)}
+                            </Button>
+                        ))}
+                    </DropdownMenu>
                     {!disabled && onClick && (
                         <Button
                             className={styles.selectButton}
