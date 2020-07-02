@@ -1,30 +1,17 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
+import { MdSettings } from 'react-icons/md';
 
-import ListView from '#rsu/../v2/View/ListView';
+import { Link } from '@reach/router';
 import POSMIcon from '#resources/posm.png';
 
-import { routeSettings, hasNavbar, NavbarRoute } from '#constants';
-
-import MenuItem from './MenuItem';
-
 import styles from './styles.scss';
-
-const pages = routeSettings.filter(hasNavbar);
 
 interface Props {
     className?: string;
 }
 
 class Navbar extends React.PureComponent<Props> {
-    private static menuKeySelector = (data: NavbarRoute) => data.name;
-
-    private menuRendererParams = (key: string, data: NavbarRoute) => ({
-        title: data.title,
-        link: data.path,
-        disabled: data.disabled,
-    });
-
     public render() {
         const {
             className: classNameFromProps,
@@ -37,8 +24,9 @@ class Navbar extends React.PureComponent<Props> {
 
         return (
             <nav className={className}>
-                <div
-                    className={styles.brand}
+                <Link
+                    className={_cs(styles.link, styles.brand)}
+                    to="/"
                     title={process.env.REACT_APP_VERSION}
                 >
                     <img
@@ -49,14 +37,14 @@ class Navbar extends React.PureComponent<Props> {
                     <div className={styles.label}>
                         replay tool
                     </div>
-                </div>
-                <ListView
-                    data={pages}
-                    keySelector={Navbar.menuKeySelector}
-                    renderer={MenuItem}
-                    rendererParams={this.menuRendererParams}
-                    className={styles.menu}
-                />
+                </Link>
+                <Link
+                    className={_cs(styles.link, styles.configurationIcon)}
+                    title="Configuration"
+                    to="/configuration/"
+                >
+                    <MdSettings />
+                </Link>
             </nav>
         );
     }

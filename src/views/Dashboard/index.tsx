@@ -13,6 +13,11 @@ import {
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
+import LayerSwitcher, {
+    mapStyles,
+    StyleNames,
+} from '#components/LayerSwitcher';
+
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
@@ -301,32 +306,6 @@ interface PosmStatus {
     errorDetails?: string;
 }
 
-const mapStyle: mapboxgl.MapboxOptions['style'] = {
-    version: 8,
-    name: 'Wikimedia',
-    sources: {
-        base: {
-            type: 'raster',
-            tiles: [
-                'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png',
-            ],
-            tileSize: 256,
-        },
-    },
-    layers: [
-        {
-            id: 'background',
-            type: 'background',
-            paint: { 'background-color': 'rgb(239, 239, 239)' },
-        },
-        {
-            id: 'base',
-            type: 'raster',
-            source: 'base',
-        },
-    ],
-};
-
 interface LocalElementsCount {
     waysCount: number;
     nodesCount: number;
@@ -350,6 +329,7 @@ interface AoiInformation {
 }
 
 interface State {
+    selectedStyle: StyleNames;
     posmStatus: PosmStatus;
     posmStates: PosmState[];
     alreadyLoaded: boolean;
@@ -535,6 +515,7 @@ class Dashboard extends React.PureComponent<Props, State> {
 
         this.state = {
             bounds: undefined,
+            selectedStyle: 'Wikimedia',
             conflictsVisibility: false,
             posmStatus: {
                 state: PosmStateEnum.not_triggered,
@@ -745,6 +726,10 @@ class Dashboard extends React.PureComponent<Props, State> {
         };
     };
 
+    private handleStyleChange = (value: StyleNames) => {
+        this.setState({ selectedStyle: value });
+    }
+
     public render() {
         const {
             className,
@@ -780,7 +765,13 @@ class Dashboard extends React.PureComponent<Props, State> {
             posmStates,
             alreadyLoaded,
             conflictsVisibility,
+            selectedStyle,
         } = this.state;
+
+        let mapStyle = mapStyles.find(item => item.name === selectedStyle);
+        if (mapStyle === undefined) {
+            [mapStyle] = mapStyles;
+        }
 
         const notStartedStep = isNotStarted(posmStatus.state);
         const conflictedStep = isConflicted(posmStatus.state);
@@ -1034,7 +1025,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     )}
                 </div>
                 <Map
-                    mapStyle={mapStyle}
+                    mapStyle={mapStyle.data}
                     mapOptions={mapOptions}
                     scaleControlShown
                     navControlShown
@@ -1103,13 +1094,18 @@ class Dashboard extends React.PureComponent<Props, State> {
                                         className={styles.legendColor}
                                         style={{ backgroundColor: legendItem.color }}
                                     />
-                                    <span className={styles.legendTitle}>
+                                    <span>
                                         {legendItem.title}
                                     </span>
                                 </div>
                             ))}
                         </div>
                     )}
+                    <LayerSwitcher
+                        className={styles.layerSwitcher}
+                        selected={selectedStyle}
+                        onSelectedLayerChange={this.handleStyleChange}
+                    />
                 </Map>
             </div>
         );

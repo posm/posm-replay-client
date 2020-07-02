@@ -128,7 +128,7 @@
     .legend {
         position: absolute;
         bottom: var(--spacing-medium);
-        left: calc(var(--width-sidebar-max) + var(--spacing-medium));
+        left: calc(var(--width-sidebar-max) + 2 * var(--spacing-medium) + 38px);
         z-index: 11;
         border: var(--width-separator-thin) solid var(--color-separator);
         background-color: var(--color-foreground);
@@ -148,6 +148,10 @@
                 height: 10px;
             }
         }
+    }
+
+    .layer-switcher {
+        left: calc(var(--width-sidebar-max) + var(--spacing-medium));
     }
 
     /*

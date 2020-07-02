@@ -7,7 +7,10 @@ import {
     RiCheckboxCircleLine,
 } from 'react-icons/ri';
 
-import DropdownMenu from '#rsca/DropdownMenu';
+import LayerSwitcher, {
+    mapStyles,
+    StyleNames,
+} from '#components/LayerSwitcher';
 import Button from '#rsu/../v2/Action/Button';
 
 import Map from '#re-map';
@@ -19,160 +22,6 @@ import MapLayer from '#re-map/MapSource/MapLayer';
 import { ElementGeoJSON, ShapeType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
-
-type StyleNames = 'Wikimedia' | 'OSM' | 'World Imagery' | 'Humanitarian' | 'Offline';
-
-interface MapStyle {
-    name: StyleNames;
-    data: mapboxgl.MapboxOptions['style'];
-}
-
-// url: process.env.REACT_APP_OSM_LAYER_URL,
-const mapStyles: MapStyle[] = [
-    {
-        name: 'Wikimedia',
-        data: {
-            version: 8,
-            name: 'Wikimedia',
-            sources: {
-                base: {
-                    type: 'raster',
-                    tiles: [
-                        'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}.png',
-                    ],
-                    tileSize: 256,
-                },
-            },
-            layers: [
-                {
-                    id: 'background',
-                    type: 'background',
-                    paint: { 'background-color': 'rgb(239, 239, 239)' },
-                },
-                {
-                    id: 'base',
-                    type: 'raster',
-                    source: 'base',
-                },
-            ],
-        },
-    },
-    {
-        name: 'OSM',
-        data: {
-            version: 8,
-            name: 'OSM',
-            sources: {
-                base: {
-                    type: 'raster',
-                    tiles: [
-                        'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    ],
-                    tileSize: 256,
-                },
-            },
-            layers: [
-                {
-                    id: 'background',
-                    type: 'background',
-                    paint: { 'background-color': 'rgb(239, 239, 239)' },
-                },
-                {
-                    id: 'base',
-                    type: 'raster',
-                    source: 'base',
-                },
-            ],
-        },
-    },
-    {
-        name: 'World Imagery',
-        data: {
-            version: 8,
-            name: 'World Imagery',
-            sources: {
-                base: {
-                    type: 'raster',
-                    tiles: [
-                        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.jpg',
-                    ],
-                    tileSize: 256,
-                },
-            },
-            layers: [
-                {
-                    id: 'background',
-                    type: 'background',
-                    paint: { 'background-color': 'rgb(239, 239, 239)' },
-                },
-                {
-                    id: 'base',
-                    type: 'raster',
-                    source: 'base',
-                },
-            ],
-        },
-    },
-    {
-        name: 'Humanitarian',
-        data: {
-            version: 8,
-            name: 'Humanitarian',
-            sources: {
-                base: {
-                    type: 'raster',
-                    tiles: [
-                        'http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-                        'http://b.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-                    ],
-                    tileSize: 256,
-                },
-            },
-            layers: [
-                {
-                    id: 'background',
-                    type: 'background',
-                    paint: { 'background-color': 'rgb(239, 239, 239)' },
-                },
-                {
-                    id: 'base',
-                    type: 'raster',
-                    source: 'base',
-                },
-            ],
-        },
-    },
-];
-
-if (process.env.REACT_APP_OSM_LAYER_URL) {
-    mapStyles.push({
-        name: 'Offline',
-        data: {
-            version: 8,
-            sources: {
-                mm: {
-                    type: 'raster',
-                    url: process.env.REACT_APP_OSM_LAYER_URL,
-                    tileSize: 256,
-                },
-            },
-            layers: [
-                {
-                    id: 'background',
-                    type: 'background',
-                    paint: { 'background-color': 'rgb(239, 239, 239)' },
-                },
-                {
-                    id: 'mm_layer',
-                    type: 'raster',
-                    source: 'mm',
-                },
-            ],
-        },
-    });
-}
 
 const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
     type: 'geojson',
@@ -245,11 +94,8 @@ interface Props {
 }
 
 interface State {
-    selectedStyle?: StyleNames;
+    selectedStyle: StyleNames;
 }
-
-const styleLabelSelector = (item: MapStyle) => item.name;
-const styleKeySelector = (item: MapStyle) => item.name;
 
 class ConflictMap extends React.PureComponent<Props, State> {
     public static defaultProps = {
@@ -262,7 +108,7 @@ class ConflictMap extends React.PureComponent<Props, State> {
         super(props);
         const { defaultSelectedStyle } = props;
         this.state = {
-            selectedStyle: defaultSelectedStyle,
+            selectedStyle: defaultSelectedStyle || mapStyles[0].name,
         };
     }
 
@@ -381,33 +227,12 @@ class ConflictMap extends React.PureComponent<Props, State> {
                         options={mapStyles}
                         onChange={this.handleStyleChange}
                     />
-                      */}
-                    <DropdownMenu
+                    */}
+                    <LayerSwitcher
                         className={styles.layerSwitcher}
-                        dropdownIconClassName={styles.icon}
-                        dropdownClassName={styles.container}
-                        leftComponent={(
-                            <RiStackLine />
-                        )}
-                        hideDropdownIcon
-                        closeOnClick
-                    >
-                        {mapStyles.map(mapStyleItem => (
-                            <Button
-                                key={styleKeySelector(mapStyleItem)}
-                                className={_cs(
-                                    styles.layerButton,
-                                    selectedStyle === styleKeySelector(mapStyleItem)
-                                        && styles.active,
-                                )}
-                                onClick={() => this.handleStyleChange(
-                                    styleKeySelector(mapStyleItem),
-                                )}
-                            >
-                                {styleLabelSelector(mapStyleItem)}
-                            </Button>
-                        ))}
-                    </DropdownMenu>
+                        selected={selectedStyle}
+                        onSelectedLayerChange={this.handleStyleChange}
+                    />
                     {!disabled && onClick && (
                         <Button
                             className={styles.selectButton}
