@@ -280,6 +280,7 @@ interface PosmStatus {
     state: PosmStateEnum;
     isCurrentStateComplete?: boolean;
     hasErrored?: boolean;
+    errorDetails?: string;
 }
 
 const mapStyle: mapboxgl.MapboxOptions['style'] = {
@@ -358,6 +359,7 @@ interface Response {
     state: keyof typeof PosmStateEnum;
     isCurrentStateComplete: boolean;
     hasErrored: boolean;
+    errorDetails?: string;
 }
 
 type Props = NewProps<OwnProps, Params>;
@@ -400,6 +402,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 state,
                 isCurrentStateComplete,
                 hasErrored,
+                errorDetails,
             } = response as Response;
 
             const {
@@ -421,6 +424,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 state: PosmStateEnum[state],
                 isCurrentStateComplete,
                 hasErrored,
+                errorDetails,
             });
 
             if (!setAoiInformation) {
@@ -434,9 +438,11 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 area: bounds && (area(bboxPolygon(bounds)) / 1000000),
                 dateCloned,
                 localChangesetsCount,
+
                 nodesCount: localElementsCount?.nodesCount,
                 waysCount: localElementsCount?.waysCount,
                 relationsCount: localElementsCount?.relationsCount,
+
                 totalResolvedElements,
                 totalPartiallyResolvedElements,
                 totalConflictingElements,
@@ -471,6 +477,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 state: PosmStateEnum.gathering_changesets,
                 isCurrentStateComplete: false,
                 hasErrored: false,
+                errorDetails: undefined,
             });
         },
     },
@@ -485,6 +492,7 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
                 state: PosmStateEnum.gathering_changesets,
                 isCurrentStateComplete: false,
                 hasErrored: false,
+                errorDetails: undefined,
             });
         },
     },
@@ -514,6 +522,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                 state: PosmStateEnum.not_triggered,
                 isCurrentStateComplete: true,
                 hasErrored: false,
+                errorDetails: undefined,
             },
             aoiInformation: {
                 name: '-',
@@ -759,6 +768,8 @@ class Dashboard extends React.PureComponent<Props, State> {
             unresolvedConflictsResponse as ConflictsResponse,
         );
 
+        const currentStateName = posmStates.find(item => item.id === posmStatus.state)?.name;
+
         return (
             <div className={_cs(className, styles.dashboard)}>
                 <div className={styles.sidebar}>
@@ -878,23 +889,25 @@ class Dashboard extends React.PureComponent<Props, State> {
                                 total={totalConflictingElements}
                                 resolved={totalResolvedElements}
                             />
-                            <div className={styles.actions}>
-                                <Checkbox
-                                    className={styles.checkboxOne}
-                                    label="Show Conflicts in Map"
-                                    value={conflictsVisibility}
-                                    onChange={this.handleShowConflictsButtonClick}
-                                />
-                                <Button
-                                    buttonType="button-primary"
-                                    className={styles.resolveConflictButton}
-                                    onClick={this.handleResolveConflictButtonClick}
-                                    // disabled={resolveDisabled}
-                                >
-                                    Go to Conflicts
-                                </Button>
-                            </div>
-                            {resolveDisabled && (
+                            {!posmStatus.hasErrored && (
+                                <div className={styles.actions}>
+                                    <Checkbox
+                                        className={styles.checkboxOne}
+                                        label="Show Conflicts in Map"
+                                        value={conflictsVisibility}
+                                        onChange={this.handleShowConflictsButtonClick}
+                                    />
+                                    <Button
+                                        buttonType="button-primary"
+                                        className={styles.resolveConflictButton}
+                                        onClick={this.handleResolveConflictButtonClick}
+                                        // disabled={resolveDisabled}
+                                    >
+                                        Go to Conflicts
+                                    </Button>
+                                </div>
+                            )}
+                            {!posmStatus.hasErrored && resolveDisabled && (
                                 <Info
                                     className={styles.info}
                                     message="Resolve all conflicts to push changes to OSM"
@@ -904,22 +917,50 @@ class Dashboard extends React.PureComponent<Props, State> {
                     )}
                     {resolvedStep && (
                         <div className={styles.resolution}>
-                            <div className={styles.actions}>
-                                <Checkbox
-                                    className={styles.checkboxOne}
-                                    label="Show Conflicts in Map"
-                                    value={conflictsVisibility}
-                                    onChange={this.handleShowConflictsButtonClick}
-                                />
-                                <Button
-                                    buttonType="button-primary"
-                                    className={styles.pushToUpstreamButton}
-                                    onClick={this.handlePushToUpstreamButton}
-                                >
-                                    Push to OSM
-                                </Button>
-                            </div>
+                            {!posmStatus.hasErrored && (
+                                <div className={styles.actions}>
+                                    <Checkbox
+                                        className={styles.checkboxOne}
+                                        label="Show Conflicts in Map"
+                                        value={conflictsVisibility}
+                                        onChange={this.handleShowConflictsButtonClick}
+                                    />
+                                    <Button
+                                        buttonType="button-primary"
+                                        className={styles.pushToUpstreamButton}
+                                        onClick={this.handlePushToUpstreamButton}
+                                    >
+                                        Push to OSM
+                                    </Button>
+                                </div>
+                            )}
                         </div>
+                    )}
+                    {posmStatus.hasErrored && (
+                        <>
+                            <a
+                                className={styles.link}
+                                href={`https://github.com/posm/posm-replay-server/issues/new?title=${currentStateName}&body=${posmStatus.errorDetails}&labels=bug-from-ui`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Post this issue on github
+                            </a>
+                            <Info
+                                className={styles.info}
+                                message={(
+                                    <>
+                                        <div>
+                                            {currentStateName}
+                                        </div>
+                                        <div>
+                                            {posmStatus.errorDetails || 'Something went wrong!'}
+                                        </div>
+                                    </>
+                                )}
+                                variant="danger"
+                            />
+                        </>
                     )}
                 </div>
                 <Map

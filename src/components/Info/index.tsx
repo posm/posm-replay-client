@@ -7,7 +7,8 @@ import styles from './styles.scss';
 
 interface Props {
     className?: string;
-    message?: string;
+    message?: React.ReactNode;
+    variant?: 'danger' | 'info';
 }
 
 class Info extends React.PureComponent<Props> {
@@ -15,16 +16,28 @@ class Info extends React.PureComponent<Props> {
         const {
             className,
             message,
+            variant = 'info',
         } = this.props;
 
         return (
-            <div className={_cs(styles.info, className)}>
+            <div
+                className={_cs(
+                    className,
+                    styles.container,
+                    variant === 'info' && styles.info,
+                    variant === 'danger' && styles.danger,
+                )}
+            >
                 <Icon
-                    className={styles.icon}
+                    className={_cs(
+                        styles.icon,
+                        variant === 'info' && styles.info,
+                        variant === 'danger' && styles.danger,
+                    )}
                     name="infoCircle"
                 />
                 <div className={styles.message}>
-                    { message }
+                    {message}
                 </div>
             </div>
         );

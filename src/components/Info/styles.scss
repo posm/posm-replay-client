@@ -1,14 +1,29 @@
-.info {
+.container {
     display: flex;
     align-items: center;
     border: var(--width-separator-thin) solid var(--color-primary);
     padding: 0 calc(var(--spacing-medium) - var(--spacing-small));
 
+    &.danger {
+        border-color: var(--color-danger);
+    }
+
+    &.info {
+        border-color: var(--color-accent);
+    }
+
     .icon {
         flex-shrink: 0;
         padding: 0 var(--spacing-small);
-        color: var(--color-accent);
         font-size: var(--font-size-extra-large);
+
+        &.info {
+            color: var(--color-accent);
+        }
+
+        &.danger {
+            color: var(--color-danger);
+        }
     }
 
     .message {
