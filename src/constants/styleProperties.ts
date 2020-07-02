@@ -17,6 +17,7 @@ const styleProperties = {
     colorNavbar: 'var(--color-dark-blue)',
     colorTextOnNavbar: 'var(--color-text-on-dark)',
     colorTextOnNavbarHover: '#fff',
+    colorTextLabel: 'rgba(0, 0, 0, 0.5)',
 
     heightProgressBar: '6px',
     radiusBorderProgressBar: '3px',

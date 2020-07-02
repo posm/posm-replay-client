@@ -40,7 +40,7 @@ const routeSettings: SomeRoute[] = [
         title: 'Conflict Resolution',
         path: '/conflict-resolution/',
         load: () => import('../views/ConflictResolution'),
-        navbar: true,
+        // navbar: true,
     },
     {
         name: 'configuration',

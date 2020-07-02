@@ -24,6 +24,7 @@ const gitRevisionPlugin = new GitRevisionPlugin();
 
 const appBase = process.cwd();
 const eslintFile = path.resolve(appBase, '.eslintrc-loader.js');
+const nodeModulesDir = path.resolve(appBase, 'node_modules/');
 const appSrc = path.resolve(appBase, 'src/');
 const appDist = path.resolve(appBase, 'build/');
 const appIndexJs = path.resolve(appBase, 'src/index.tsx');
@@ -148,6 +149,14 @@ module.exports = (env) => {
                                 sourceMap: true,
                             },
                         },
+                    ],
+                },
+                {
+                    test: /\.css$/,
+                    include: nodeModulesDir,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        'css-loader',
                     ],
                 },
                 {

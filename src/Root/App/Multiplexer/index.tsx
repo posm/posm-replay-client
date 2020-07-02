@@ -3,6 +3,8 @@ import React from 'react';
 import { Router } from '@reach/router';
 import { _cs } from '@togglecorp/fujs';
 
+import 'mapbox-gl/dist/mapbox-gl.css';
+
 import Button from '#rsu/../v2/Action/Button';
 import LoadingAnimation from '#rscv/LoadingAnimation';
 import Message from '#rsu/../v2/View/Message';
@@ -10,7 +12,6 @@ import Message from '#rsu/../v2/View/Message';
 import Navbar from '#components/Navbar';
 import errorBound from '#components/errorBound';
 import helmetify from '#components/helmetify';
-
 
 import { routeSettings } from '#constants';
 import styles from './styles.scss';

@@ -1,12 +1,14 @@
 .text-output {
-    display: flex;
-    padding: var(--spacing-extra-small) calc(var(--spacing-medium) - var(--spacing-small));
+    display: table-row;
 
     .label {
-        padding: 0 var(--spacing-small);
+        display: table-cell;
+        padding: var(--spacing-extra-small) var(--spacing-medium);
+        color: var(--color-text-label);
     }
 
     .value {
-        padding: 0 var(--spacing-small);
+        display: table-cell;
+        padding: var(--spacing-extra-small) var(--spacing-medium);
     }
 }

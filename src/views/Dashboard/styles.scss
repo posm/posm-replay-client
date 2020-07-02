@@ -1,10 +1,12 @@
 .dashboard {
     display: flex;
+    overflow: auto;
 
     .sidebar {
         border-right: var(--width-separator-thin) solid var(--color-separator);
         background-color: var(--color-foreground);
         width: var(--width-sidebar-max);
+        overflow-y: auto;
         // min-width: var(--width-sidebar-min);
         // max-width: var(--width-sidebar-max);
 
@@ -31,7 +33,9 @@
         }
 
         .details {
-            padding: calc(var(--spacing-medium) - var(--spacing-extra-small)) calc(var(--spacing-large) - var(--spacing-medium));
+            display: table;
+            margin: calc(var(--spacing-medium) - var(--spacing-extra-small)) calc(var(--spacing-large) - var(--spacing-medium));
+            padding: 0 calc(var(--spacing-large) - var(--spacing-small));
         }
 
         >.actions {
@@ -40,15 +44,27 @@
             .start-button {
                 margin: var(--spacing-small);
             }
+
+            .retry-button {
+                margin: var(--spacing-small);
+            }
         }
 
         .info {
             margin: calc(var(--spacing-medium) - var(--spacing-small)) var(--spacing-large);
             color: var(--color-text-label);
-        }
 
-        .link {
-            margin: calc(var(--spacing-medium) - var(--spacing-small)) var(--spacing-large);
+            .code {
+                margin: 0;
+                margin: var(--spacing-small);
+                background-color: var(--color-background);
+                max-height: 400px;
+                overflow: auto;
+            }
+
+            .link {
+                margin: var(--spacing-small);
+            }
         }
 
         .progress {
@@ -64,14 +80,6 @@
 
             .task-list {
                 padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-medium));
-            }
-
-            >.actions {
-                padding: calc(var(--spacing-medium) - var(--spacing-small)) calc(var(--spacing-large) - var(--spacing-small));
-
-                .retry-button {
-                    margin: var(--spacing-small);
-                }
             }
         }
 

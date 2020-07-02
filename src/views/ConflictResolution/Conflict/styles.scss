@@ -44,6 +44,12 @@
 
     .title-row-container {
         flex-shrink: 0;
+
+        .selection-button {
+            .icon {
+                margin: 0 var(--spacing-small);
+            }
+        }
     }
 
     .tag-rows-container {

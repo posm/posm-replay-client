@@ -1,8 +1,13 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
+import {
+    RiCheckboxBlankCircleLine,
+    RiCheckboxCircleLine,
+    RiCloseCircleLine,
+    RiIndeterminateCircleLine,
+} from 'react-icons/ri';
 
 import Spinner from '#rsu/../v2/View/Spinner';
-import Icon from '#rscg/Icon';
 
 import styles from './styles.scss';
 
@@ -15,12 +20,12 @@ interface Props {
 }
 
 const iconNames: {
-    [key in Status]: string;
+    [key in Status]: any;
 } = {
-    'not-initiated': 'checkmarkCircleEmpty',
-    completed: 'checkmarkCircle',
-    failed: 'error',
-    pending: 'checkmarkCircleEmpty',
+    'not-initiated': RiCheckboxBlankCircleLine,
+    completed: RiCheckboxCircleLine,
+    failed: RiCloseCircleLine,
+    pending: RiIndeterminateCircleLine,
 };
 
 const statusStyles: {
@@ -40,13 +45,15 @@ class TaskItem extends React.PureComponent<Props> {
             label,
         } = this.props;
 
+        const MyIcon = iconNames[status];
+
         return (
             <div className={_cs(styles.taskItem, className, statusStyles[status])}>
                 <div className={styles.left}>
-                    { status === 'pending' ? (
+                    {status === 'pending' ? (
                         <Spinner className={styles.spinner} />
                     ) : (
-                        <Icon name={iconNames[status]} />
+                        MyIcon && <MyIcon />
                     )}
                 </div>
                 <div className={styles.right}>
