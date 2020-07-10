@@ -20,6 +20,7 @@ const styleProperties = {
     colorTextLabel: 'rgba(0, 0, 0, 0.5)',
 
     heightProgressBar: '6px',
+    heightNavbar: '48px',
     radiusBorderProgressBar: '3px',
 
     mapElementsZIndex: 11,

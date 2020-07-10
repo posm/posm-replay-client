@@ -1,9 +1,5 @@
 import React from 'react';
-import {
-    _cs,
-    isDefined,
-    doesObjectHaveNoData,
-} from '@togglecorp/fujs';
+import { _cs } from '@togglecorp/fujs';
 import memoize from 'memoize-one';
 import { navigate } from '@reach/router';
 import {
@@ -13,17 +9,7 @@ import {
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
-import LayerSwitcher from '#components/LayerSwitcher';
-
-import Map from '#re-map';
-import MapContainer from '#re-map/MapContainer';
-import MapBounds from '#re-map/MapBounds';
-import MapSource from '#re-map/MapSource';
-import MapLayer from '#re-map/MapSource/MapLayer';
-import MapTooltip from '#re-map/MapTooltip';
-
 import Checkbox from '#components/Checkbox';
-import MapStyleContext, { MapStyle } from '#components/LayerContext';
 import ConflictStatus from '#components/ConflictStatus';
 import TextOutput from '#components/TextOutput';
 import FormattedDate from '#rscv/FormattedDate';
@@ -32,13 +18,7 @@ import Info from '#components/Info';
 import LoadingAnimation from '#rscv/LoadingAnimation';
 import ProgressBar from '#components/ProgressBar';
 import TaskItem, { Status } from '#components/TaskItem';
-import {
-    Bounds,
-    ShapeType,
-    ConflictElement,
-    ResolutionStatus,
-    ElementGeoJSON,
-} from '#constants/types';
+import { Bounds } from '#constants/types';
 
 import {
     createConnectedRequestCoordinator,
@@ -51,18 +31,7 @@ import {
 import pathNames from '#constants/pathNames';
 
 import styles from './styles.scss';
-
-
-interface Region {
-    tags: {
-        [key: string]: string | undefined;
-    };
-}
-
-interface ClickedRegion {
-    feature: GeoJSON.Feature<GeoJSON.Polygon, Region>;
-    lngLat: mapboxgl.LngLatLike;
-}
+import DashboardMap from './Map';
 
 function getUrl(title: string | undefined, body: string | undefined) {
     const url = new URL('https://github.com/posm/posm-replay-server/issues/new');
@@ -101,247 +70,6 @@ const isResolved = (state: PosmStateEnum) => state === PosmStateEnum.resolved;
 const isPushing = (state: PosmStateEnum) => state === PosmStateEnum.pushing_conflicts;
 const isPushed = (state: PosmStateEnum) => state === PosmStateEnum.pushed_upstream;
 
-/*
-const isAnalyzing = (state: PosmStateEnum) => (
-    state > PosmStateEnum.not_triggered && state < PosmStateEnum.conflicts
-);
-*/
-
-const tooltipOptions: mapboxgl.PopupOptions = {
-    closeOnClick: true,
-    closeButton: false,
-    // offset: 8,
-    maxWidth: '480px',
-};
-
-const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
-    type: 'geojson',
-};
-
-const areaFillLayerOptions: mapboxgl.Layer = {
-    id: 'not-required',
-    type: 'fill',
-    paint: {
-        'fill-color': [
-            'match',
-            ['get', 'resolution'],
-            'resolved', 'green',
-            'partially_resolved', 'yellow',
-            'unresolved', 'red',
-            'all', '#414141',
-            'black',
-        ],
-        'fill-opacity': 0.5,
-    },
-};
-const areaOutlineLayerOptions: mapboxgl.Layer = {
-    id: 'not-required',
-    type: 'line',
-    paint: {
-        'line-color': 'black',
-        'line-opacity': 0.8,
-        'line-width': 3,
-    },
-};
-const linePointOptions: mapboxgl.Layer = {
-    id: 'not-required',
-    type: 'circle',
-    paint: {
-        'circle-color': [
-            'match',
-            ['get', 'resolution'],
-            'resolved', 'green',
-            'partially_resolved', 'yellow',
-            'unresolved', 'red',
-            'all', '#414141',
-            'black',
-        ],
-        'circle-radius': 3,
-        'circle-stroke-width': 1,
-        'circle-stroke-color': 'black',
-        'circle-stroke-opacity': 0.5,
-    },
-};
-
-const lineLayerOptions: mapboxgl.Layer = {
-    id: 'not-required',
-    type: 'line',
-    paint: {
-        'line-color': [
-            'match',
-            ['get', 'resolution'],
-            'resolved', 'green',
-            'partially_resolved', 'yellow',
-            'unresolved', 'red',
-            'all', '#414141',
-            'black',
-        ],
-        'line-opacity': 0.8,
-        'line-width': 5,
-    },
-};
-
-const pointLayerOptions: mapboxgl.Layer = {
-    id: 'not-required',
-    type: 'circle',
-    paint: {
-        'circle-color': [
-            'match',
-            ['get', 'resolution'],
-            'resolved', 'green',
-            'partially_resolved', 'yellow',
-            'unresolved', 'red',
-            'black',
-        ],
-        'circle-radius': 8,
-        'circle-opacity': 0.5,
-        'circle-stroke-width': 1,
-        'circle-stroke-color': 'black',
-        'circle-stroke-opacity': 0.8,
-    },
-};
-
-const legendItems = [
-    {
-        color: 'red',
-        title: 'Unresolved',
-    },
-    {
-        color: 'yellow',
-        title: 'Partially Resolved',
-    },
-    {
-        color: 'green',
-        title: 'Resolved',
-    },
-    {
-        color: '#414141',
-        title: 'Non Conflicted',
-    },
-];
-
-function getShapeType(geoJson: ElementGeoJSON): ShapeType {
-    const { geometry: { type } } = geoJson;
-    if (type === 'Point' || type === 'MultiPoint') {
-        return 'point';
-    }
-    if (type === 'LineString' || type === 'MultiLineString') {
-        return 'line';
-    }
-    if (type === 'Polygon' || type === 'MultiPolygon') {
-        return 'area';
-    }
-
-    return 'point';
-}
-
-interface ConflictsResponse {
-    results: ConflictElement[];
-}
-
-const getSeggregatedGeojsons = (
-    resolved: ConflictsResponse,
-    partiallyResolved: ConflictsResponse,
-    unresolved: ConflictsResponse,
-    allElements: ConflictsResponse,
-) => {
-    const pointFeatures: ElementGeoJSON[] = [];
-    const lineFeatures: ElementGeoJSON[] = [];
-    const areaFeatures: ElementGeoJSON[] = [];
-
-    function getFeatures(
-        conflictElements: ConflictElement[],
-        status: ResolutionStatus,
-        overwriteStatus: string,
-    ) {
-        const filteredConflictElements = conflictElements
-            .filter(element => element.status === status);
-
-        function getGeoJson(element: ConflictElement, finalOverwriteStatus: string) {
-            const geoJson = element.localGeojson && !doesObjectHaveNoData(element.localGeojson)
-                ? element.localGeojson
-                : element.originalGeojson;
-
-            return {
-                ...geoJson,
-                properties: {
-                    ...geoJson.properties,
-                    resolution: finalOverwriteStatus,
-                },
-            };
-        }
-
-        const points: ElementGeoJSON[] = filteredConflictElements
-            .filter(element => getShapeType(element.originalGeojson) === 'point')
-            .map(element => getGeoJson(element, overwriteStatus));
-
-        const lines: ElementGeoJSON[] = filteredConflictElements
-            .filter(element => getShapeType(element.originalGeojson) === 'line')
-            .map(element => getGeoJson(element, overwriteStatus));
-
-        const areas: ElementGeoJSON[] = filteredConflictElements
-            .filter(element => getShapeType(element.originalGeojson) === 'area')
-            .map(element => getGeoJson(element, overwriteStatus));
-
-        return [points, lines, areas];
-    }
-
-    if (isDefined(resolved?.results)) {
-        const [points, lines, areas] = getFeatures(resolved.results, 'resolved', 'resolved');
-        pointFeatures.push(...points);
-        lineFeatures.push(...lines);
-        areaFeatures.push(...areas);
-    }
-
-    if (isDefined(partiallyResolved?.results)) {
-        const [points, lines, areas] = getFeatures(
-            partiallyResolved.results,
-            'partially_resolved',
-            'partially_resolved',
-        );
-        pointFeatures.push(...points);
-        lineFeatures.push(...lines);
-        areaFeatures.push(...areas);
-    }
-
-    if (isDefined(unresolved?.results)) {
-        const [points, lines, areas] = getFeatures(
-            unresolved.results,
-            'unresolved',
-            'unresolved',
-        );
-        pointFeatures.push(...points);
-        lineFeatures.push(...lines);
-        areaFeatures.push(...areas);
-    }
-
-    if (isDefined(allElements?.results)) {
-        const [points, lines, areas] = getFeatures(
-            allElements.results,
-            'resolved',
-            'all',
-        );
-        pointFeatures.push(...points);
-        lineFeatures.push(...lines);
-        areaFeatures.push(...areas);
-    }
-
-    return ({
-        pointGeojson: {
-            type: 'FeatureCollection',
-            features: pointFeatures,
-        },
-        lineGeojson: {
-            type: 'FeatureCollection',
-            features: lineFeatures,
-        },
-        areaGeojson: {
-            type: 'FeatureCollection',
-            features: areaFeatures,
-        },
-    });
-};
-
 interface PosmState {
     id: PosmStateEnum;
     name: string;
@@ -379,17 +107,15 @@ interface AoiInformation {
 }
 
 interface State {
-    selectedStyle: string;
     posmStatus: PosmStatus;
     posmStates: PosmState[];
     alreadyLoaded: boolean;
     allElementsVisibility: boolean;
+    conflictsVisibility: boolean;
     aoiInformation: AoiInformation;
     totalResolvedElements?: number;
     totalPartiallyResolvedElements?: number;
     bounds?: Bounds;
-    conflictsVisibility: boolean;
-    clickedRegionProperties: ClickedRegion | undefined;
 }
 
 interface OwnProps {
@@ -585,10 +311,9 @@ class Dashboard extends React.PureComponent<Props, State> {
         });
 
         this.state = {
-            bounds: undefined,
-            selectedStyle: 'Wikimedia',
             conflictsVisibility: false,
             allElementsVisibility: false,
+            bounds: undefined,
             posmStatus: {
                 state: PosmStateEnum.not_triggered,
                 isCurrentStateComplete: true,
@@ -618,8 +343,6 @@ class Dashboard extends React.PureComponent<Props, State> {
                 { id: PosmStateEnum.pushed_upstream, name: 'Resolved data pushed to OSM', hidden: true },
             ],
             alreadyLoaded: false,
-
-            clickedRegionProperties: undefined,
         };
     }
 
@@ -647,51 +370,27 @@ class Dashboard extends React.PureComponent<Props, State> {
     });
 
     private setAoiInformation = (aoiInformation: AoiInformation) => {
-        const {
-            conflictsVisibility,
-            bounds,
-            totalResolvedElements,
-            totalPartiallyResolvedElements,
-        } = this.state;
-
-        const {
-            requests: {
-                unresolvedConflictsGet,
-                partiallyResolvedConflictsGet,
-                resolvedConflictsGet,
-            },
-        } = this.props;
+        const { bounds } = this.state;
 
         const {
             bounds: newBounds,
-            totalResolvedElements: newTotalResolvedElements,
-            totalPartiallyResolvedElements: newTotalPartiallyResolvedElements,
+            totalResolvedElements,
+            totalPartiallyResolvedElements,
         } = aoiInformation;
 
-        if (
-            conflictsVisibility
-            && (
-                totalResolvedElements !== newTotalResolvedElements
-                || totalPartiallyResolvedElements !== newTotalPartiallyResolvedElements
-            )
-        ) {
-            unresolvedConflictsGet.do();
-            partiallyResolvedConflictsGet.do();
-            resolvedConflictsGet.do();
-        }
 
         if (JSON.stringify(bounds) !== JSON.stringify(newBounds)) {
             this.setState({
                 bounds: aoiInformation.bounds,
                 aoiInformation,
-                totalResolvedElements: newTotalResolvedElements,
-                totalPartiallyResolvedElements: newTotalPartiallyResolvedElements,
+                totalResolvedElements,
+                totalPartiallyResolvedElements,
             });
         } else {
             this.setState({
                 aoiInformation,
-                totalResolvedElements: newTotalResolvedElements,
-                totalPartiallyResolvedElements: newTotalPartiallyResolvedElements,
+                totalResolvedElements,
+                totalPartiallyResolvedElements,
             });
         }
     }
@@ -699,8 +398,6 @@ class Dashboard extends React.PureComponent<Props, State> {
     private setPosmStatus = (posmStatus: PosmStatus) => {
         this.setState({ posmStatus });
     }
-
-    private getSeggregatedGeojsons = memoize(getSeggregatedGeojsons);
 
     private handleStartButtonClick = () => {
         const {
@@ -710,32 +407,10 @@ class Dashboard extends React.PureComponent<Props, State> {
     }
 
     private handleShowConflictsButtonClick = (show: boolean) => {
-        const {
-            requests: {
-                unresolvedConflictsGet,
-                partiallyResolvedConflictsGet,
-                resolvedConflictsGet,
-            },
-        } = this.props;
-
-        if (show) {
-            unresolvedConflictsGet.do();
-            partiallyResolvedConflictsGet.do();
-            resolvedConflictsGet.do();
-        }
         this.setState({ conflictsVisibility: show });
     }
 
     private handleShowNonConflictedCheckboxChange = (show: boolean) => {
-        const {
-            requests: {
-                nonConflictedElementsGet,
-            },
-        } = this.props;
-
-        if (show) {
-            nonConflictedElementsGet.do();
-        }
         this.setState({ allElementsVisibility: show });
     }
 
@@ -752,14 +427,6 @@ class Dashboard extends React.PureComponent<Props, State> {
         } = this.props;
         resetReplayTool.do({ setPosmStatus: this.setPosmStatus });
     }
-
-    /*
-    private handleResolveConflictButtonClick = () => {
-        this.setState({
-            posmStatus: { state: PosmStateEnum.resolved, isCurrentStateComplete: true },
-        });
-    }
-    */
 
     private handleResolveConflictButtonClick = () => {
         navigate(pathNames.conflictResolution);
@@ -820,59 +487,16 @@ class Dashboard extends React.PureComponent<Props, State> {
         };
     };
 
-    private handleStyleChange = (value: string) => {
-        this.setState({ selectedStyle: value });
-    }
-
-    private handleTooltipClose = () => {
-        this.setState({ clickedRegionProperties: undefined });
-    }
-
-    private handleMapRegionClick = (
-        feature: mapboxgl.MapboxGeoJSONFeature,
-        lngLat: mapboxgl.LngLat,
-    ) => {
-        const safeFeature = feature as unknown as GeoJSON.Feature<GeoJSON.Polygon, Region>;
-        this.setState({
-            clickedRegionProperties: {
-                feature: {
-                    ...safeFeature,
-                    // FIXME: later
-                    properties: {
-                        ...safeFeature.properties,
-                        tags: JSON.parse(feature.properties.tags),
-                    },
-                },
-                lngLat,
-            },
-        });
-
-        return true;
-    }
-
     public render() {
         const {
             className,
             requests: {
                 currentAoiGet: { pending },
-                unresolvedConflictsGet: {
-                    response: unresolvedConflictsResponse,
-                },
-                resolvedConflictsGet: {
-                    response: resolvedConflictsResponse,
-                },
-                partiallyResolvedConflictsGet: {
-                    response: partiallyResolvedConflictsResponse,
-                },
-                nonConflictedElementsGet: {
-                    response: allElementsResponse,
-                },
             },
         } = this.props;
 
         const {
             aoiInformation: {
-                totalResolvedElements,
                 totalConflictingElements,
                 name,
                 description,
@@ -889,16 +513,9 @@ class Dashboard extends React.PureComponent<Props, State> {
             alreadyLoaded,
             conflictsVisibility,
             allElementsVisibility,
-            selectedStyle,
-
-            clickedRegionProperties,
+            totalResolvedElements,
+            totalPartiallyResolvedElements,
         } = this.state;
-        const { mapStyles } = this.context;
-
-        let mapStyle = mapStyles.find((item: MapStyle) => item.name === selectedStyle);
-        if (mapStyle === undefined) {
-            [mapStyle] = mapStyles;
-        }
 
         const notStartedStep = isNotStarted(posmStatus.state);
         const conflictedStep = isConflicted(posmStatus.state);
@@ -906,30 +523,13 @@ class Dashboard extends React.PureComponent<Props, State> {
         const pushingStep = isPushing(posmStatus.state);
         const pushedStep = isPushed(posmStatus.state);
 
-        // const analyzing = isAnalyzing(posmStatus.state);
-
-        const mapOptions = this.createMapOptions(bounds);
-
         let conflictProgress = 0;
         if (totalResolvedElements && totalConflictingElements) {
             conflictProgress = 100 * (totalResolvedElements / totalConflictingElements);
         }
         const resolveDisabled = totalConflictingElements !== totalResolvedElements;
 
-        const {
-            lineGeojson,
-            pointGeojson,
-            areaGeojson,
-        } = this.getSeggregatedGeojsons(
-            resolvedConflictsResponse as ConflictsResponse,
-            partiallyResolvedConflictsResponse as ConflictsResponse,
-            unresolvedConflictsResponse as ConflictsResponse,
-            allElementsResponse as ConflictsResponse,
-        );
-
         const currentStateName = posmStates.find(item => item.id === posmStatus.state)?.name;
-
-        const popupTags = clickedRegionProperties?.feature.properties.tags;
 
         return (
             <div className={_cs(className, styles.dashboard)}>
@@ -1036,12 +636,6 @@ class Dashboard extends React.PureComponent<Props, State> {
                             />
                             {!posmStatus.hasErrored && (
                                 <div className={styles.actions}>
-                                    <Checkbox
-                                        className={styles.checkboxOne}
-                                        label="Show Conflicts in Map"
-                                        value={conflictsVisibility}
-                                        onChange={this.handleShowConflictsButtonClick}
-                                    />
                                     <Button
                                         buttonType="button-primary"
                                         className={styles.resolveConflictButton}
@@ -1064,12 +658,6 @@ class Dashboard extends React.PureComponent<Props, State> {
                         <div className={styles.resolution}>
                             {!posmStatus.hasErrored && (
                                 <div className={styles.actions}>
-                                    <Checkbox
-                                        className={styles.checkboxOne}
-                                        label="Show Conflicts in Map"
-                                        value={conflictsVisibility}
-                                        onChange={this.handleShowConflictsButtonClick}
-                                    />
                                     <Button
                                         buttonType="button-primary"
                                         className={styles.resolveConflictButton}
@@ -1090,7 +678,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                         </div>
                     )}
                     {pushingStep && (
-                        <div className={styles.pushing}>
+                        <div>
                             {!posmStatus.hasErrored && (
                                 <div className={styles.actions}>
                                     <span>Indefinite progress</span>
@@ -1099,11 +687,10 @@ class Dashboard extends React.PureComponent<Props, State> {
                         </div>
                     )}
                     {pushedStep && (
-                        <div className={styles.pushed}>
+                        <div>
                             {!posmStatus.hasErrored && (
                                 <div className={styles.actions}>
                                     <Button
-                                        className={styles.whatNextBUtton}
                                         disabled
                                         buttonType="button-primary"
                                     >
@@ -1160,130 +747,33 @@ class Dashboard extends React.PureComponent<Props, State> {
                             />
                         </>
                     )}
-                    <Checkbox
-                        className={styles.nonConflictedCheckbox}
-                        label="Show non-conflicted elements"
-                        value={allElementsVisibility}
-                        onChange={this.handleShowNonConflictedCheckboxChange}
-                    />
-                </div>
-                <Map
-                    mapStyle={mapStyle.data}
-                    mapOptions={mapOptions}
-                    scaleControlShown
-                    navControlShown
-                >
-                    <MapBounds
-                        bounds={bounds}
-                        padding={50}
-                    />
-                    <MapContainer className={styles.map} />
-
-                    {clickedRegionProperties && (
-                        <MapTooltip
-                            coordinates={clickedRegionProperties.lngLat}
-                            tooltipOptions={tooltipOptions}
-                            onHide={this.handleTooltipClose}
-                        >
-                            <div>
-                                {popupTags && Object.keys(popupTags).map(
-                                    key => (
-                                        <TextOutput
-                                            key={key}
-                                            label={key}
-                                            labelClassName={styles.tooltipLabel}
-                                            value={popupTags[key]}
-                                        />
-                                    ),
-                                )}
-                            </div>
-                        </MapTooltip>
-                    )}
-
-                    {conflictsVisibility && areaGeojson && (
-                        <MapSource
-                            sourceKey="area"
-                            geoJson={areaGeojson}
-                            sourceOptions={sourceOptions}
-                        >
-                            <MapLayer
-                                layerKey="fill"
-                                layerOptions={areaFillLayerOptions}
-                                onClick={this.handleMapRegionClick}
+                    {((conflictedStep || resolvedStep) && !posmStatus.hasErrored) && (
+                        <div className={styles.checkboxesContainer}>
+                            <Checkbox
+                                label="Show Conflicts in Map"
+                                value={conflictsVisibility}
+                                onChange={this.handleShowConflictsButtonClick}
                             />
-                            <MapLayer
-                                layerKey="outline"
-                                layerOptions={areaOutlineLayerOptions}
-                                onClick={this.handleMapRegionClick}
+                            <Checkbox
+                                label="Show non-conflicted elements"
+                                value={allElementsVisibility}
+                                onChange={this.handleShowNonConflictedCheckboxChange}
                             />
-                            <MapLayer
-                                layerKey="circle"
-                                layerOptions={linePointOptions}
-                                onClick={this.handleMapRegionClick}
-                            />
-                        </MapSource>
-                    )}
-                    {conflictsVisibility && lineGeojson && (
-                        <MapSource
-                            sourceKey="line"
-                            geoJson={lineGeojson}
-                            sourceOptions={sourceOptions}
-                        >
-                            <MapLayer
-                                layerKey="outline"
-                                layerOptions={lineLayerOptions}
-                                onClick={this.handleMapRegionClick}
-                            />
-                            <MapLayer
-                                layerKey="circle"
-                                layerOptions={linePointOptions}
-                                onClick={this.handleMapRegionClick}
-                            />
-                        </MapSource>
-                    )}
-                    {conflictsVisibility && pointGeojson && (
-                        <MapSource
-                            sourceKey="point"
-                            geoJson={pointGeojson}
-                            sourceOptions={sourceOptions}
-                        >
-                            <MapLayer
-                                layerKey="circle"
-                                layerOptions={pointLayerOptions}
-                                onClick={this.handleMapRegionClick}
-                            />
-                        </MapSource>
-                    )}
-                    {conflictsVisibility && (
-                        <div className={styles.legend}>
-                            {legendItems.map(legendItem => (
-                                <div
-                                    key={legendItem.title}
-                                    className={styles.legendItem}
-                                >
-                                    <span
-                                        className={styles.legendColor}
-                                        style={{ backgroundColor: legendItem.color }}
-                                    />
-                                    <span>
-                                        {legendItem.title}
-                                    </span>
-                                </div>
-                            ))}
                         </div>
                     )}
-                    <LayerSwitcher
-                        className={styles.layerSwitcher}
-                        selected={selectedStyle}
-                        onSelectedLayerChange={this.handleStyleChange}
-                    />
-                </Map>
+                </div>
+                <DashboardMap
+                    className={styles.map}
+                    bounds={bounds}
+                    conflictsVisibility={conflictsVisibility}
+                    allElementsVisibility={allElementsVisibility}
+                    totalResolvedElements={totalResolvedElements}
+                    totalPartiallyResolvedElements={totalPartiallyResolvedElements}
+                />
             </div>
         );
     }
 }
-
-Dashboard.contextType = MapStyleContext;
 
 export default createConnectedRequestCoordinator<OwnProps>()(
     createRequestClient(requestOptions)(Dashboard),

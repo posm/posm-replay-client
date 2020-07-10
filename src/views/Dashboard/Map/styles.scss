@@ -1,0 +1,37 @@
+.map {
+    position: relative;
+}
+
+.legend {
+    position: absolute;
+    bottom: var(--spacing-medium);
+    left: calc(var(--width-sidebar-max) + 2 * var(--spacing-medium) + 38px);
+    z-index: 11;
+    border: var(--width-separator-thin) solid var(--color-separator);
+    background-color: var(--color-foreground);
+    padding: var(--spacing-small);
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        padding: var(--spacing-extra-small);
+
+        .legend-color {
+            display: inline-block;
+            margin-right: var(--spacing-small);
+            border: 1px solid black;
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+        }
+    }
+}
+
+.layer-switcher {
+    left: calc(var(--width-sidebar-max) + var(--spacing-medium));
+}
+
+.tooltip-label {
+    text-transform: capitalize;
+    font-weight: var(--font-weight-bold);
+}
