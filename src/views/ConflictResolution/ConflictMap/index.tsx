@@ -2,15 +2,11 @@ import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
 import {
-    RiStackLine,
     RiCheckboxBlankCircleLine,
     RiCheckboxCircleLine,
 } from 'react-icons/ri';
 
-import LayerSwitcher, {
-    mapStyles,
-    StyleNames,
-} from '#components/LayerSwitcher';
+import LayerSwitcher from '#components/LayerSwitcher';
 import Button from '#rsu/../v2/Action/Button';
 
 import Map from '#re-map';
@@ -19,6 +15,7 @@ import MapBounds from '#re-map/MapBounds';
 import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
 
+import MapStyleContext, { MapStyle } from '#components/LayerContext';
 import { ElementGeoJSON, ShapeType, Bounds } from '#constants/types';
 
 import styles from './styles.scss';
@@ -85,7 +82,7 @@ interface Props {
     type: ShapeType;
     bounds: Bounds;
     geoJSON: ElementGeoJSON;
-    defaultSelectedStyle?: StyleNames;
+    defaultSelectedStyle?: string;
     onClick?: () => void;
 
     conflicted: boolean;
@@ -94,7 +91,7 @@ interface Props {
 }
 
 interface State {
-    selectedStyle: StyleNames;
+    selectedStyle: string;
 }
 
 class ConflictMap extends React.PureComponent<Props, State> {
@@ -107,12 +104,13 @@ class ConflictMap extends React.PureComponent<Props, State> {
     public constructor(props: Props) {
         super(props);
         const { defaultSelectedStyle } = props;
+
         this.state = {
-            selectedStyle: defaultSelectedStyle || mapStyles[0].name,
+            selectedStyle: defaultSelectedStyle || 'Wikimedia',
         };
     }
 
-    private handleStyleChange = (value: StyleNames) => {
+    private handleStyleChange = (value: string) => {
         this.setState({ selectedStyle: value });
     }
 
@@ -133,13 +131,15 @@ class ConflictMap extends React.PureComponent<Props, State> {
             selectedStyle,
         } = this.state;
 
+        const { mapStyles } = this.context;
+
         // FIXME: memoize creation of mapOptions
         const mapOptions = {
             bounds,
         };
 
         // FIXME: memoize calculation of selected mapStyle
-        let mapStyle = mapStyles.find(item => item.name === selectedStyle);
+        let mapStyle = mapStyles.find((item: MapStyle) => item.name === selectedStyle);
         if (mapStyle === undefined) {
             [mapStyle] = mapStyles;
         }
@@ -216,18 +216,6 @@ class ConflictMap extends React.PureComponent<Props, State> {
                             />
                         </MapSource>
                     )}
-                    {/*
-                    <SegmentInput
-                        className={styles.layerSwitcher}
-                        showLabel={false}
-                        showHintAndError={false}
-                        labelSelector={styleLabelSelector}
-                        keySelector={styleKeySelector}
-                        value={selectedStyle}
-                        options={mapStyles}
-                        onChange={this.handleStyleChange}
-                    />
-                    */}
                     <LayerSwitcher
                         className={styles.layerSwitcher}
                         selected={selectedStyle}
@@ -250,5 +238,7 @@ class ConflictMap extends React.PureComponent<Props, State> {
         );
     }
 }
+
+ConflictMap.contextType = MapStyleContext;
 
 export default ConflictMap;

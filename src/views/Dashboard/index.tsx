@@ -13,10 +13,7 @@ import {
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
-import LayerSwitcher, {
-    mapStyles,
-    StyleNames,
-} from '#components/LayerSwitcher';
+import LayerSwitcher from '#components/LayerSwitcher';
 
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
@@ -25,6 +22,7 @@ import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
 
 import Checkbox from '#components/Checkbox';
+import MapStyleContext, { MapStyle } from '#components/LayerContext';
 import ConflictStatus from '#components/ConflictStatus';
 import TextOutput from '#components/TextOutput';
 import FormattedDate from '#rscv/FormattedDate';
@@ -329,7 +327,7 @@ interface AoiInformation {
 }
 
 interface State {
-    selectedStyle: StyleNames;
+    selectedStyle: string;
     posmStatus: PosmStatus;
     posmStates: PosmState[];
     alreadyLoaded: boolean;
@@ -726,7 +724,7 @@ class Dashboard extends React.PureComponent<Props, State> {
         };
     };
 
-    private handleStyleChange = (value: StyleNames) => {
+    private handleStyleChange = (value: string) => {
         this.setState({ selectedStyle: value });
     }
 
@@ -767,8 +765,9 @@ class Dashboard extends React.PureComponent<Props, State> {
             conflictsVisibility,
             selectedStyle,
         } = this.state;
+        const { mapStyles } = this.context;
 
-        let mapStyle = mapStyles.find(item => item.name === selectedStyle);
+        let mapStyle = mapStyles.find((item: MapStyle) => item.name === selectedStyle);
         if (mapStyle === undefined) {
             [mapStyle] = mapStyles;
         }
@@ -1111,6 +1110,8 @@ class Dashboard extends React.PureComponent<Props, State> {
         );
     }
 }
+
+Dashboard.contextType = MapStyleContext;
 
 export default createConnectedRequestCoordinator<OwnProps>()(
     createRequestClient(requestOptions)(Dashboard),
