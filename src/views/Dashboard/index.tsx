@@ -108,6 +108,7 @@ const areaFillLayerOptions: mapboxgl.Layer = {
             'resolved', 'green',
             'partially_resolved', 'yellow',
             'unresolved', 'red',
+            'all', '#414141',
             'black',
         ],
         'fill-opacity': 0.5,
@@ -132,6 +133,7 @@ const linePointOptions: mapboxgl.Layer = {
             'resolved', 'green',
             'partially_resolved', 'yellow',
             'unresolved', 'red',
+            'all', '#414141',
             'black',
         ],
         'circle-radius': 3,
@@ -151,6 +153,7 @@ const lineLayerOptions: mapboxgl.Layer = {
             'resolved', 'green',
             'partially_resolved', 'yellow',
             'unresolved', 'red',
+            'all', '#414141',
             'black',
         ],
         'line-opacity': 0.8,
@@ -191,6 +194,10 @@ const legendItems = [
         color: 'green',
         title: 'Resolved',
     },
+    {
+        color: '#414141',
+        title: 'Non Conflicted',
+    },
 ];
 
 function getShapeType(geoJson: ElementGeoJSON): ShapeType {
@@ -216,16 +223,21 @@ const getSeggregatedGeojsons = (
     resolved: ConflictsResponse,
     partiallyResolved: ConflictsResponse,
     unresolved: ConflictsResponse,
+    allElements: ConflictsResponse,
 ) => {
     const pointFeatures: ElementGeoJSON[] = [];
     const lineFeatures: ElementGeoJSON[] = [];
     const areaFeatures: ElementGeoJSON[] = [];
 
-    function getFeatures(conflictElements: ConflictElement[], status: ResolutionStatus) {
+    function getFeatures(
+        conflictElements: ConflictElement[],
+        status: ResolutionStatus,
+        overwriteStatus: string,
+    ) {
         const filteredConflictElements = conflictElements
             .filter(element => element.status === status);
 
-        function getGeoJson(element: ConflictElement, elementStatus: ResolutionStatus) {
+        function getGeoJson(element: ConflictElement, finalOverwriteStatus: string) {
             const geoJson = element.localGeojson && !doesObjectHaveNoData(element.localGeojson)
                 ? element.localGeojson
                 : element.originalGeojson;
@@ -234,46 +246,66 @@ const getSeggregatedGeojsons = (
                 ...geoJson,
                 properties: {
                     ...geoJson.properties,
-                    resolution: elementStatus,
+                    resolution: finalOverwriteStatus,
                 },
             };
         }
 
         const points: ElementGeoJSON[] = filteredConflictElements
             .filter(element => getShapeType(element.originalGeojson) === 'point')
-            .map(element => getGeoJson(element, status));
+            .map(element => getGeoJson(element, overwriteStatus));
 
         const lines: ElementGeoJSON[] = filteredConflictElements
             .filter(element => getShapeType(element.originalGeojson) === 'line')
-            .map(element => getGeoJson(element, status));
+            .map(element => getGeoJson(element, overwriteStatus));
 
         const areas: ElementGeoJSON[] = filteredConflictElements
             .filter(element => getShapeType(element.originalGeojson) === 'area')
-            .map(element => getGeoJson(element, status));
+            .map(element => getGeoJson(element, overwriteStatus));
 
         return [points, lines, areas];
     }
 
     if (isDefined(resolved?.results)) {
-        const [points, lines, areas] = getFeatures(resolved.results, 'resolved');
+        const [points, lines, areas] = getFeatures(resolved.results, 'resolved', 'resolved');
         pointFeatures.push(...points);
         lineFeatures.push(...lines);
         areaFeatures.push(...areas);
     }
 
     if (isDefined(partiallyResolved?.results)) {
-        const [points, lines, areas] = getFeatures(partiallyResolved.results, 'partially_resolved');
+        const [points, lines, areas] = getFeatures(
+            partiallyResolved.results,
+            'partially_resolved',
+            'partially_resolved',
+        );
         pointFeatures.push(...points);
         lineFeatures.push(...lines);
         areaFeatures.push(...areas);
     }
 
     if (isDefined(unresolved?.results)) {
-        const [points, lines, areas] = getFeatures(unresolved.results, 'unresolved');
+        const [points, lines, areas] = getFeatures(
+            unresolved.results,
+            'unresolved',
+            'unresolved',
+        );
         pointFeatures.push(...points);
         lineFeatures.push(...lines);
         areaFeatures.push(...areas);
     }
+
+    if (isDefined(allElements?.results)) {
+        const [points, lines, areas] = getFeatures(
+            allElements.results,
+            'resolved',
+            'all',
+        );
+        pointFeatures.push(...points);
+        lineFeatures.push(...lines);
+        areaFeatures.push(...areas);
+    }
+
     return ({
         pointGeojson: {
             type: 'FeatureCollection',
@@ -331,6 +363,7 @@ interface State {
     posmStatus: PosmStatus;
     posmStates: PosmState[];
     alreadyLoaded: boolean;
+    allElementsVisibility: boolean;
     aoiInformation: AoiInformation;
     totalResolvedElements?: number;
     totalPartiallyResolvedElements?: number;
@@ -462,6 +495,10 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
         url: '/resolved-elements/',
         method: methods.GET,
     },
+    nonConflictedElementsGet: {
+        url: '/all-changes/?state=no-conflicts',
+        method: methods.GET,
+    },
     triggerReplayTool: {
         url: '/trigger/',
         method: methods.POST,
@@ -479,6 +516,21 @@ const requestOptions: { [key: string]: ClientAttributes<OwnProps, Params> } = {
     },
     retriggerReplayTool: {
         url: '/re-trigger/',
+        method: methods.POST,
+        onSuccess: ({ params }) => {
+            if (!params || !params.setPosmStatus) {
+                return;
+            }
+            params.setPosmStatus({
+                state: PosmStateEnum.gathering_changesets,
+                isCurrentStateComplete: false,
+                hasErrored: false,
+                errorDetails: undefined,
+            });
+        },
+    },
+    resetReplayTool: {
+        url: '/reset/',
         method: methods.POST,
         onSuccess: ({ params }) => {
             if (!params || !params.setPosmStatus) {
@@ -515,6 +567,7 @@ class Dashboard extends React.PureComponent<Props, State> {
             bounds: undefined,
             selectedStyle: 'Wikimedia',
             conflictsVisibility: false,
+            allElementsVisibility: false,
             posmStatus: {
                 state: PosmStateEnum.not_triggered,
                 isCurrentStateComplete: true,
@@ -650,11 +703,31 @@ class Dashboard extends React.PureComponent<Props, State> {
         this.setState({ conflictsVisibility: show });
     }
 
+    private handleShowNonConflictedCheckboxChange = (show: boolean) => {
+        const {
+            requests: {
+                nonConflictedElementsGet,
+            },
+        } = this.props;
+
+        if (show) {
+            nonConflictedElementsGet.do();
+        }
+        this.setState({ allElementsVisibility: show });
+    }
+
     private handleRetryButtonClick = () => {
         const {
             requests: { retriggerReplayTool },
         } = this.props;
         retriggerReplayTool.do({ setPosmStatus: this.setPosmStatus });
+    }
+
+    private handleResetButtonClick = () => {
+        const {
+            requests: { resetReplayTool },
+        } = this.props;
+        resetReplayTool.do({ setPosmStatus: this.setPosmStatus });
     }
 
     /*
@@ -742,6 +815,9 @@ class Dashboard extends React.PureComponent<Props, State> {
                 partiallyResolvedConflictsGet: {
                     response: partiallyResolvedConflictsResponse,
                 },
+                nonConflictedElementsGet: {
+                    response: allElementsResponse,
+                },
             },
         } = this.props;
 
@@ -763,6 +839,7 @@ class Dashboard extends React.PureComponent<Props, State> {
             posmStates,
             alreadyLoaded,
             conflictsVisibility,
+            allElementsVisibility,
             selectedStyle,
         } = this.state;
         const { mapStyles } = this.context;
@@ -796,6 +873,7 @@ class Dashboard extends React.PureComponent<Props, State> {
             resolvedConflictsResponse as ConflictsResponse,
             partiallyResolvedConflictsResponse as ConflictsResponse,
             unresolvedConflictsResponse as ConflictsResponse,
+            allElementsResponse as ConflictsResponse,
         );
 
         const currentStateName = posmStates.find(item => item.id === posmStatus.state)?.name;
@@ -999,6 +1077,13 @@ class Dashboard extends React.PureComponent<Props, State> {
                                 >
                                     Retry
                                 </Button>
+                                <Button
+                                    buttonType="button-primary"
+                                    className={styles.retryButton}
+                                    onClick={this.handleResetButtonClick}
+                                >
+                                    Reset
+                                </Button>
                             </div>
                             <Info
                                 className={styles.info}
@@ -1022,6 +1107,12 @@ class Dashboard extends React.PureComponent<Props, State> {
                             />
                         </>
                     )}
+                    <Checkbox
+                        className={styles.checkboxOne}
+                        label="Show non-conflicted elements"
+                        value={allElementsVisibility}
+                        onChange={this.handleShowNonConflictedCheckboxChange}
+                    />
                 </div>
                 <Map
                     mapStyle={mapStyle.data}
