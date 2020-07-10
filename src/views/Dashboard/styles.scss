@@ -165,3 +165,12 @@
     }
     */
 }
+
+.non-conflicted-checkbox {
+    margin: var(--spacing-extra-small) var(--spacing-extra-large);
+}
+
+.tooltip-label {
+    text-transform: capitalize;
+    font-weight: var(--font-weight-bold);
+}

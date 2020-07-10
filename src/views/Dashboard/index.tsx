@@ -20,6 +20,7 @@ import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
 import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
+import MapTooltip from '#re-map/MapTooltip';
 
 import Checkbox from '#components/Checkbox';
 import MapStyleContext, { MapStyle } from '#components/LayerContext';
@@ -50,6 +51,18 @@ import {
 import pathNames from '#constants/pathNames';
 
 import styles from './styles.scss';
+
+
+interface Region {
+    tags: {
+        [key: string]: string | undefined;
+    };
+}
+
+interface ClickedRegion {
+    feature: GeoJSON.Feature<GeoJSON.Polygon, Region>;
+    lngLat: mapboxgl.LngLatLike;
+}
 
 function getUrl(title: string | undefined, body: string | undefined) {
     const url = new URL('https://github.com/posm/posm-replay-server/issues/new');
@@ -93,6 +106,13 @@ const isAnalyzing = (state: PosmStateEnum) => (
     state > PosmStateEnum.not_triggered && state < PosmStateEnum.conflicts
 );
 */
+
+const tooltipOptions: mapboxgl.PopupOptions = {
+    closeOnClick: true,
+    closeButton: false,
+    // offset: 8,
+    maxWidth: '480px',
+};
 
 const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
     type: 'geojson',
@@ -369,6 +389,7 @@ interface State {
     totalPartiallyResolvedElements?: number;
     bounds?: Bounds;
     conflictsVisibility: boolean;
+    clickedRegionProperties: ClickedRegion | undefined;
 }
 
 interface OwnProps {
@@ -597,6 +618,8 @@ class Dashboard extends React.PureComponent<Props, State> {
                 { id: PosmStateEnum.pushed_upstream, name: 'Resolved data pushed to OSM', hidden: true },
             ],
             alreadyLoaded: false,
+
+            clickedRegionProperties: undefined,
         };
     }
 
@@ -801,6 +824,32 @@ class Dashboard extends React.PureComponent<Props, State> {
         this.setState({ selectedStyle: value });
     }
 
+    private handleTooltipClose = () => {
+        this.setState({ clickedRegionProperties: undefined });
+    }
+
+    private handleMapRegionClick = (
+        feature: mapboxgl.MapboxGeoJSONFeature,
+        lngLat: mapboxgl.LngLat,
+    ) => {
+        const safeFeature = feature as unknown as GeoJSON.Feature<GeoJSON.Polygon, Region>;
+        this.setState({
+            clickedRegionProperties: {
+                feature: {
+                    ...safeFeature,
+                    // FIXME: later
+                    properties: {
+                        ...safeFeature.properties,
+                        tags: JSON.parse(feature.properties.tags),
+                    },
+                },
+                lngLat,
+            },
+        });
+
+        return true;
+    }
+
     public render() {
         const {
             className,
@@ -841,6 +890,8 @@ class Dashboard extends React.PureComponent<Props, State> {
             conflictsVisibility,
             allElementsVisibility,
             selectedStyle,
+
+            clickedRegionProperties,
         } = this.state;
         const { mapStyles } = this.context;
 
@@ -877,6 +928,8 @@ class Dashboard extends React.PureComponent<Props, State> {
         );
 
         const currentStateName = posmStates.find(item => item.id === posmStatus.state)?.name;
+
+        const popupTags = clickedRegionProperties?.feature.properties.tags;
 
         return (
             <div className={_cs(className, styles.dashboard)}>
@@ -1108,7 +1161,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                         </>
                     )}
                     <Checkbox
-                        className={styles.checkboxOne}
+                        className={styles.nonConflictedCheckbox}
                         label="Show non-conflicted elements"
                         value={allElementsVisibility}
                         onChange={this.handleShowNonConflictedCheckboxChange}
@@ -1125,6 +1178,28 @@ class Dashboard extends React.PureComponent<Props, State> {
                         padding={50}
                     />
                     <MapContainer className={styles.map} />
+
+                    {clickedRegionProperties && (
+                        <MapTooltip
+                            coordinates={clickedRegionProperties.lngLat}
+                            tooltipOptions={tooltipOptions}
+                            onHide={this.handleTooltipClose}
+                        >
+                            <div>
+                                {popupTags && Object.keys(popupTags).map(
+                                    key => (
+                                        <TextOutput
+                                            key={key}
+                                            label={key}
+                                            labelClassName={styles.tooltipLabel}
+                                            value={popupTags[key]}
+                                        />
+                                    ),
+                                )}
+                            </div>
+                        </MapTooltip>
+                    )}
+
                     {conflictsVisibility && areaGeojson && (
                         <MapSource
                             sourceKey="area"
@@ -1134,14 +1209,17 @@ class Dashboard extends React.PureComponent<Props, State> {
                             <MapLayer
                                 layerKey="fill"
                                 layerOptions={areaFillLayerOptions}
+                                onClick={this.handleMapRegionClick}
                             />
                             <MapLayer
                                 layerKey="outline"
                                 layerOptions={areaOutlineLayerOptions}
+                                onClick={this.handleMapRegionClick}
                             />
                             <MapLayer
                                 layerKey="circle"
                                 layerOptions={linePointOptions}
+                                onClick={this.handleMapRegionClick}
                             />
                         </MapSource>
                     )}
@@ -1154,10 +1232,12 @@ class Dashboard extends React.PureComponent<Props, State> {
                             <MapLayer
                                 layerKey="outline"
                                 layerOptions={lineLayerOptions}
+                                onClick={this.handleMapRegionClick}
                             />
                             <MapLayer
                                 layerKey="circle"
                                 layerOptions={linePointOptions}
+                                onClick={this.handleMapRegionClick}
                             />
                         </MapSource>
                     )}
@@ -1170,6 +1250,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                             <MapLayer
                                 layerKey="circle"
                                 layerOptions={pointLayerOptions}
+                                onClick={this.handleMapRegionClick}
                             />
                         </MapSource>
                     )}
