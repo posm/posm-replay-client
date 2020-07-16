@@ -56,19 +56,33 @@ enum PosmStateEnum {
     'detecting_conflicts',
     'creating_geojsons',
 
-    'conflicts',
-    'resolved',
+    'resolving_conflicts',
     'pushing_conflicts',
-    'pushed_upstream',
 }
 
 const AOI_POLL_TIME = 3000;
 
 const isNotStarted = (state: PosmStateEnum) => state <= PosmStateEnum.not_triggered;
-const isConflicted = (state: PosmStateEnum) => state === PosmStateEnum.conflicts;
-const isResolved = (state: PosmStateEnum) => state === PosmStateEnum.resolved;
-const isPushing = (state: PosmStateEnum) => state === PosmStateEnum.pushing_conflicts;
-const isPushed = (state: PosmStateEnum) => state === PosmStateEnum.pushed_upstream;
+
+const isConflicted = (
+    state: PosmStateEnum,
+    isCurrentStateComplete?: boolean,
+) => state === PosmStateEnum.resolving_conflicts && !isCurrentStateComplete;
+
+const isResolved = (
+    state: PosmStateEnum,
+    isCurrentStateComplete?: boolean,
+) => state === PosmStateEnum.resolving_conflicts && isCurrentStateComplete;
+
+const isPushing = (
+    state: PosmStateEnum,
+    isCurrentStateComplete?: boolean,
+) => state === PosmStateEnum.pushing_conflicts && !isCurrentStateComplete;
+
+const isPushed = (
+    state: PosmStateEnum,
+    isCurrentStateComplete?: boolean,
+) => state === PosmStateEnum.pushing_conflicts && isCurrentStateComplete;
 
 interface PosmState {
     id: PosmStateEnum;
@@ -337,10 +351,8 @@ class Dashboard extends React.PureComponent<Props, State> {
                 { id: PosmStateEnum.extracting_local_aoi, name: 'Extracting Local AOI' },
                 { id: PosmStateEnum.detecting_conflicts, name: 'Identifying conflicts' },
                 { id: PosmStateEnum.creating_geojsons, name: 'Creating GeoJSONs' },
-                { id: PosmStateEnum.conflicts, name: 'Resolving conflicts', inanimate: true },
-                { id: PosmStateEnum.resolved, name: 'Resolved conflicts', hidden: true },
+                { id: PosmStateEnum.resolving_conflicts, name: 'Resolving conflicts' },
                 { id: PosmStateEnum.pushing_conflicts, name: 'Pushing resolved data to OSM' },
-                { id: PosmStateEnum.pushed_upstream, name: 'Resolved data pushed to OSM', hidden: true },
             ],
             alreadyLoaded: false,
         };
@@ -518,10 +530,10 @@ class Dashboard extends React.PureComponent<Props, State> {
         } = this.state;
 
         const notStartedStep = isNotStarted(posmStatus.state);
-        const conflictedStep = isConflicted(posmStatus.state);
-        const resolvedStep = isResolved(posmStatus.state);
-        const pushingStep = isPushing(posmStatus.state);
-        const pushedStep = isPushed(posmStatus.state);
+        const conflictedStep = isConflicted(posmStatus.state, posmStatus.isCurrentStateComplete);
+        const resolvedStep = isResolved(posmStatus.state, posmStatus.isCurrentStateComplete);
+        const pushingStep = isPushing(posmStatus.state, posmStatus.isCurrentStateComplete);
+        const pushedStep = isPushed(posmStatus.state, posmStatus.isCurrentStateComplete);
 
         let conflictProgress = 0;
         if (totalResolvedElements && totalConflictingElements) {
@@ -750,7 +762,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                     {((conflictedStep || resolvedStep) && !posmStatus.hasErrored) && (
                         <div className={styles.checkboxesContainer}>
                             <Checkbox
-                                label="Show Conflicts in Map"
+                                label="Show conflicted elements"
                                 value={conflictsVisibility}
                                 onChange={this.handleShowConflictsButtonClick}
                             />

@@ -136,7 +136,6 @@ function LayerSwitcher(props: Props) {
                             label="Layer URL"
                             value={layerUrl}
                             onChange={setLayerUrl}
-                            hint="http://tile.stamen.com/watercolor/{z}/{x}/{y}.jpg"
                         />
                     </ModalBody>
                     <ModalFooter>
