@@ -1,5 +1,6 @@
 .conflict-list-item {
-    display: block;
+    display: flex;
+    align-items: center;
     outline: none;
     border: 0;
     border-left: var(--width-separator-medium) solid transparent;
@@ -13,7 +14,10 @@
     font-family: inherit;
 
     .icon {
-        margin-right: var(--spacing-small);
+        flex-shrink: 0;
+        margin: 0 var(--spacing-small);
+        max-width: var(--font-size-extra-large);
+        font-size: var(--font-size-extra-large);
 
         &.error {
             color: var(--color-danger);
@@ -24,6 +28,10 @@
         &.pending {
             color: var(--color-accent);
         }
+    }
+
+    .title {
+        flex-grow: 1;
     }
 
     &:hover {

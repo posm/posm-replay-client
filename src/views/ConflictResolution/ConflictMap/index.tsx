@@ -1,6 +1,12 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
 
+import {
+    RiStackLine,
+    RiCheckboxBlankCircleLine,
+    RiCheckboxCircleLine,
+} from 'react-icons/ri';
+
 import DropdownMenu from '#rsca/DropdownMenu';
 import Button from '#rsu/../v2/Action/Button';
 
@@ -380,7 +386,10 @@ class ConflictMap extends React.PureComponent<Props, State> {
                         className={styles.layerSwitcher}
                         dropdownIconClassName={styles.icon}
                         dropdownClassName={styles.container}
-                        dropdownIcon="layers"
+                        leftComponent={(
+                            <RiStackLine />
+                        )}
+                        hideDropdownIcon
                         closeOnClick
                     >
                         {mapStyles.map(mapStyleItem => (
@@ -403,9 +412,11 @@ class ConflictMap extends React.PureComponent<Props, State> {
                         <Button
                             className={styles.selectButton}
                             buttonType={selected ? 'button-success' : 'button-default'}
-                            iconName={selected ? 'checkmarkCircle' : 'checkmarkCircleEmpty'}
                             onClick={onClick}
                         >
+                            {selected
+                                ? <RiCheckboxCircleLine className={styles.icon} />
+                                : <RiCheckboxBlankCircleLine className={styles.icon} />}
                             { selected ? 'Selected' : 'Select' }
                         </Button>
                     )}

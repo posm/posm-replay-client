@@ -11,14 +11,18 @@ import {
     buffer,
     bbox,
 } from '@turf/turf';
+import {
+    RiCheckboxCircleLine,
+    RiCheckboxBlankCircleLine,
+} from 'react-icons/ri';
 import memoize from 'memoize-one';
 
 import List from '#rsu/../v2/View/List';
 import Message from '#rsu/../v2/View/Message';
 import LoadingAnimation from '#rscv/LoadingAnimation';
 import Button from '#rsu/../v2/Action/Button';
-import Checkbox from '#rsu/../v2/Input/Checkbox';
 
+import Checkbox from '#components/Checkbox';
 import ProgressBar from '#components/ProgressBar';
 import ConflictStatus from '#components/ConflictStatus';
 
@@ -723,10 +727,13 @@ class Conflict extends React.PureComponent<Props, State> {
                                 </h2>
                                 {!modifiedMode && (
                                     <Button
+                                        className={styles.selectionButton}
                                         buttonType={bulkResolution === 'ours' ? 'button-success' : 'button-default'}
-                                        iconName={bulkResolution === 'ours' ? 'checkmarkCircle' : 'checkmarkCircleEmpty'}
                                         onClick={this.handleBulkOursSelect}
                                     >
+                                        {bulkResolution === 'ours'
+                                            ? <RiCheckboxCircleLine className={styles.icon} />
+                                            : <RiCheckboxBlankCircleLine className={styles.icon} />}
                                         { bulkResolution === 'ours' ? 'Selected' : 'Select' }
                                     </Button>
                                 )}
@@ -739,10 +746,13 @@ class Conflict extends React.PureComponent<Props, State> {
                                 </h2>
                                 {!modifiedMode && (
                                     <Button
+                                        className={styles.selectionButton}
                                         buttonType={bulkResolution === 'theirs' ? 'button-success' : 'button-default'}
-                                        iconName={bulkResolution === 'theirs' ? 'checkmarkCircle' : 'checkmarkCircleEmpty'}
                                         onClick={this.handleBulkTheirsSelect}
                                     >
+                                        {bulkResolution === 'theirs'
+                                            ? <RiCheckboxCircleLine className={styles.icon} />
+                                            : <RiCheckboxBlankCircleLine className={styles.icon} />}
                                         { bulkResolution === 'theirs' ? 'Selected' : 'Select' }
                                     </Button>
                                 )}

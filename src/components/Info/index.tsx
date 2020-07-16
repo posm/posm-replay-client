@@ -1,20 +1,21 @@
 import React from 'react';
 import { _cs } from '@togglecorp/fujs';
-
-import Icon from '#rscg/Icon';
+import { RiInformationLine } from 'react-icons/ri';
 
 import styles from './styles.scss';
 
 interface Props {
     className?: string;
+    title?: React.ReactNode;
     message?: React.ReactNode;
-    variant?: 'danger' | 'info';
+    variant?: 'danger' | 'info' | 'success';
 }
 
 class Info extends React.PureComponent<Props> {
     public render() {
         const {
             className,
+            title,
             message,
             variant = 'info',
         } = this.props;
@@ -26,19 +27,27 @@ class Info extends React.PureComponent<Props> {
                     styles.container,
                     variant === 'info' && styles.info,
                     variant === 'danger' && styles.danger,
+                    variant === 'success' && styles.success,
                 )}
             >
-                <Icon
-                    className={_cs(
-                        styles.icon,
-                        variant === 'info' && styles.info,
-                        variant === 'danger' && styles.danger,
-                    )}
-                    name="infoCircle"
-                />
-                <div className={styles.message}>
-                    {message}
+                <div className={styles.title}>
+                    <RiInformationLine
+                        className={_cs(
+                            styles.icon,
+                            variant === 'info' && styles.info,
+                            variant === 'danger' && styles.danger,
+                            variant === 'success' && styles.success,
+                        )}
+                    />
+                    <div className={styles.text}>
+                        {title}
+                    </div>
                 </div>
+                {message && (
+                    <div className={styles.message}>
+                        {message}
+                    </div>
+                )}
             </div>
         );
     }

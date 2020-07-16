@@ -13,14 +13,13 @@ import {
 
 import ListView from '#rsu/../v2/View/ListView';
 import Button from '#rsu/../v2/Action/Button';
-import Checkbox from '#rsu/../v2/Input/Checkbox';
-
 import Map from '#re-map';
 import MapContainer from '#re-map/MapContainer';
 import MapBounds from '#re-map/MapBounds';
 import MapSource from '#re-map/MapSource';
 import MapLayer from '#re-map/MapSource/MapLayer';
 
+import Checkbox from '#components/Checkbox';
 import ConflictStatus from '#components/ConflictStatus';
 import TextOutput from '#components/TextOutput';
 import FormattedDate from '#rscv/FormattedDate';
@@ -49,6 +48,19 @@ import pathNames from '#constants/pathNames';
 
 import styles from './styles.scss';
 
+function getUrl(title: string | undefined, body: string | undefined) {
+    const url = new URL('https://github.com/posm/posm-replay-server/issues/new');
+    if (title) {
+        url.searchParams.set('title', `Error while ${title}`);
+    }
+    if (body) {
+        url.searchParams.set('body', body);
+    }
+    url.searchParams.set('labels', 'bug-from-ui');
+
+    return url.toString();
+}
+
 enum PosmStateEnum {
     'not_triggered',
     'gathering_changesets',
@@ -61,18 +73,23 @@ enum PosmStateEnum {
 
     'conflicts',
     'resolved',
-    'push_conflicts',
+    'pushing_conflicts',
     'pushed_upstream',
 }
 
 const AOI_POLL_TIME = 3000;
 
 const isNotStarted = (state: PosmStateEnum) => state <= PosmStateEnum.not_triggered;
+const isConflicted = (state: PosmStateEnum) => state === PosmStateEnum.conflicts;
+const isResolved = (state: PosmStateEnum) => state === PosmStateEnum.resolved;
+const isPushing = (state: PosmStateEnum) => state === PosmStateEnum.pushing_conflicts;
+const isPushed = (state: PosmStateEnum) => state === PosmStateEnum.pushed_upstream;
+
+/*
 const isAnalyzing = (state: PosmStateEnum) => (
     state > PosmStateEnum.not_triggered && state < PosmStateEnum.conflicts
 );
-const isConflicted = (state: PosmStateEnum) => state === PosmStateEnum.conflicts;
-const isResolved = (state: PosmStateEnum) => state === PosmStateEnum.resolved;
+*/
 
 const sourceOptions: mapboxgl.GeoJSONSourceRaw = {
     type: 'geojson',
@@ -274,6 +291,7 @@ interface PosmState {
     id: PosmStateEnum;
     name: string;
     hidden?: boolean;
+    inanimate?: boolean;
 }
 
 interface PosmStatus {
@@ -541,10 +559,10 @@ class Dashboard extends React.PureComponent<Props, State> {
                 { id: PosmStateEnum.extracting_local_aoi, name: 'Extracting Local AOI' },
                 { id: PosmStateEnum.detecting_conflicts, name: 'Identifying conflicts' },
                 { id: PosmStateEnum.creating_geojsons, name: 'Creating GeoJSONs' },
-                { id: PosmStateEnum.conflicts, name: 'Conflicts identified', hidden: true },
-                { id: PosmStateEnum.resolved, name: 'Conflicts resolved', hidden: true },
-                { id: PosmStateEnum.push_conflicts, name: 'Pushing conflicts', hidden: true },
-                { id: PosmStateEnum.pushed_upstream, name: 'Pushing resolved data to OSM', hidden: true },
+                { id: PosmStateEnum.conflicts, name: 'Resolving conflicts', inanimate: true },
+                { id: PosmStateEnum.resolved, name: 'Resolved conflicts', hidden: true },
+                { id: PosmStateEnum.pushing_conflicts, name: 'Pushing resolved data to OSM' },
+                { id: PosmStateEnum.pushed_upstream, name: 'Resolved data pushed to OSM', hidden: true },
             ],
             alreadyLoaded: false,
         };
@@ -555,7 +573,9 @@ class Dashboard extends React.PureComponent<Props, State> {
     }
 
     private handlePushToUpstreamButton = () => {
-        console.warn('auth action goes here');
+        if (process.env.REACT_APP_OSM_URL) {
+            window.location.href = process.env.REACT_APP_OSM_URL;
+        }
     }
 
     private createMapOptions = memoize((bounds?: Bounds) => {
@@ -676,8 +696,21 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     private getPosmStateProgress = (posmStates: PosmState[], posmStatus: PosmStatus) => {
         const visiblePosmStates = this.getVisiblePosmStates(posmStates);
-        const completedStates = visiblePosmStates.filter(item => item.id < posmStatus.state);
-        const totalCompleted = completedStates.length + (posmStatus.isCurrentStateComplete ? 1 : 0);
+        const completedStates = visiblePosmStates.filter(
+            item => item.id < posmStatus.state,
+        );
+
+        let totalCompleted = completedStates.length;
+
+        if (posmStatus.isCurrentStateComplete) {
+            const currentState = visiblePosmStates.find(
+                item => item.id === posmStatus.state,
+            );
+            if (currentState && !currentState.hidden) {
+                totalCompleted += 1;
+            }
+        }
+
         return 100 * (totalCompleted / visiblePosmStates.length);
     }
 
@@ -692,7 +725,10 @@ class Dashboard extends React.PureComponent<Props, State> {
             },
         } = this.state;
 
-        let stateStatus: Status = 'pending';
+        let stateStatus: Status = value.inanimate
+            ? 'not-initiated'
+            : 'pending';
+
         if (value.id < state) {
             stateStatus = 'completed';
         } else if (value.id > state) {
@@ -748,8 +784,12 @@ class Dashboard extends React.PureComponent<Props, State> {
 
         const notStartedStep = isNotStarted(posmStatus.state);
         const conflictedStep = isConflicted(posmStatus.state);
-        const analyzing = isAnalyzing(posmStatus.state);
         const resolvedStep = isResolved(posmStatus.state);
+        const pushingStep = isPushing(posmStatus.state);
+        const pushedStep = isPushed(posmStatus.state);
+
+        // const analyzing = isAnalyzing(posmStatus.state);
+
         const mapOptions = this.createMapOptions(bounds);
 
         let conflictProgress = 0;
@@ -822,7 +862,6 @@ class Dashboard extends React.PureComponent<Props, State> {
                             value={relationsCount}
                         />
                     </div>
-
                     {notStartedStep && (
                         <>
                             <div className={styles.actions}>
@@ -836,16 +875,21 @@ class Dashboard extends React.PureComponent<Props, State> {
                             </div>
                             <Info
                                 className={styles.info}
-                                message="The replay tool has not been started!"
+                                title="The replay tool has not been started!"
                             />
                         </>
                     )}
-
                     {!notStartedStep && (
                         <div className={styles.progress}>
                             <h3 className={styles.heading}>
                                 Progress
                             </h3>
+                            <ProgressBar
+                                className={styles.progressBar}
+                                progress={
+                                    this.getPosmStateProgress(posmStates, posmStatus)
+                                }
+                            />
                             <ListView
                                 className={styles.taskList}
                                 data={this.getVisiblePosmStates(posmStates)}
@@ -853,28 +897,8 @@ class Dashboard extends React.PureComponent<Props, State> {
                                 keySelector={this.taskItemKeySelector}
                                 rendererParams={this.taskItemRendererParams}
                             />
-                            {analyzing && (
-                                <ProgressBar
-                                    className={styles.progressBar}
-                                    progress={
-                                        this.getPosmStateProgress(posmStates, posmStatus)
-                                    }
-                                />
-                            )}
-                            {(analyzing && posmStatus.hasErrored) && (
-                                <div className={styles.actions}>
-                                    <Button
-                                        buttonType="button-primary"
-                                        className={styles.retryButton}
-                                        onClick={this.handleRetryButtonClick}
-                                    >
-                                        Retry
-                                    </Button>
-                                </div>
-                            )}
                         </div>
                     )}
-
                     {conflictedStep && (
                         <div className={styles.conflicts}>
                             <h3 className={styles.heading}>
@@ -910,7 +934,7 @@ class Dashboard extends React.PureComponent<Props, State> {
                             {!posmStatus.hasErrored && resolveDisabled && (
                                 <Info
                                     className={styles.info}
-                                    message="Resolve all conflicts to push changes to OSM"
+                                    title="Resolve all conflicts to push changes to OSM"
                                 />
                             )}
                         </div>
@@ -927,6 +951,14 @@ class Dashboard extends React.PureComponent<Props, State> {
                                     />
                                     <Button
                                         buttonType="button-primary"
+                                        className={styles.resolveConflictButton}
+                                        onClick={this.handleResolveConflictButtonClick}
+                                        // disabled={resolveDisabled}
+                                    >
+                                        Go to Conflicts
+                                    </Button>
+                                    <Button
+                                        buttonType="button-primary"
                                         className={styles.pushToUpstreamButton}
                                         onClick={this.handlePushToUpstreamButton}
                                     >
@@ -936,29 +968,67 @@ class Dashboard extends React.PureComponent<Props, State> {
                             )}
                         </div>
                     )}
+                    {pushingStep && (
+                        <div className={styles.pushing}>
+                            {!posmStatus.hasErrored && (
+                                <div className={styles.actions}>
+                                    <span>Indefinite progress</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {pushedStep && (
+                        <div className={styles.pushed}>
+                            {!posmStatus.hasErrored && (
+                                <div className={styles.actions}>
+                                    <Button
+                                        className={styles.whatNextBUtton}
+                                        disabled
+                                        buttonType="button-primary"
+                                    >
+                                        What next?
+                                    </Button>
+                                </div>
+                            )}
+                            {!posmStatus.hasErrored && (
+                                <Info
+                                    className={styles.info}
+                                    variant="success"
+                                    title="All changes pushed to OSM. Get updated OSM data for this AOI from OSM."
+                                />
+                            )}
+                        </div>
+                    )}
                     {posmStatus.hasErrored && (
                         <>
-                            <a
-                                className={styles.link}
-                                href={`https://github.com/posm/posm-replay-server/issues/new?title=${currentStateName}&body=${posmStatus.errorDetails}&labels=bug-from-ui`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                Post this issue on github
-                            </a>
+                            <div className={styles.actions}>
+                                <Button
+                                    buttonType="button-primary"
+                                    className={styles.retryButton}
+                                    onClick={this.handleRetryButtonClick}
+                                >
+                                    Retry
+                                </Button>
+                            </div>
                             <Info
                                 className={styles.info}
+                                variant="danger"
+                                title={currentStateName}
                                 message={(
                                     <>
-                                        <div>
-                                            {currentStateName}
-                                        </div>
-                                        <div>
+                                        <pre className={styles.code}>
                                             {posmStatus.errorDetails || 'Something went wrong!'}
-                                        </div>
+                                        </pre>
+                                        <a
+                                            className={styles.link}
+                                            href={getUrl(currentStateName, posmStatus.errorDetails)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            Post this issue on github
+                                        </a>
                                     </>
                                 )}
-                                variant="danger"
                             />
                         </>
                     )}

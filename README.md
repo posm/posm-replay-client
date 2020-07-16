@@ -15,7 +15,8 @@ The environment file should define these variables:
 
 ```sh
 REACT_APP_API_SERVER_URL=http://localhost:6007/api/v1
-REACT_APP_MAPBOX_ACCESS_TOKEN="<insert your access token here>"
+REACT_APP_OSM_URL=http://localhost:6007/login/openstreetmap
+REACT_APP_MAPBOX_ACCESS_TOKEN="<your-access-token>"
 REACT_APP_OSM_LAYER_URL="<url for local osm layer (this is optional)>"
 ```
 
