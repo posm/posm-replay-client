@@ -214,113 +214,140 @@ class Configuration extends React.PureComponent<Props, State> {
                     error={faramErrors}
                     disabled={pending}
                 >
-                    <div className={styles.firstPart}>
-                        <TextInput
-                            faramElementName="aoiName"
-                            label="AOI Name"
-                            hint="Directory name of AOI which contains manifest.json and other files."
-                            placeholder=""
+                    <div className={styles.inputs}>
+                        <NonFieldErrors
+                            faramElement
+                            persistent={false}
                         />
-                        <TextInput
-                            faramElementName="originalAoiFileName"
-                            label="AOI FileName"
-                            hint="File name for original aoi[osm file located inside aoi along with manifest json]"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="oauthConsumerKey"
-                            label="OAuth Consumer Key"
-                            placeholder=""
-                            hint="OSM OAuth consumer key"
-                        />
-                        <TextInput
-                            faramElementName="oauthConsumerSecret"
-                            label="OAuth Consumer Secret"
-                            hint="OSM OAuth consumer secret"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="oauthApiUrl"
-                            label="OAuth Api Url"
-                            hint="OSM oauth root api endpoint"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="requestTokenUrl"
-                            label="OAuth Request Token Url"
-                            hint="OSM OAuth api endpoint for request token"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="accessTokenUrl"
-                            label="OAuth Access Token Url"
-                            hint="OSM OAuth api endpoint for access token"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="authorizationUrl"
-                            label="OAuth Authorization Url"
-                            hint="OSM OAuth api endpoint for authorization"
-                            placeholder=""
-                        />
+                        <div className={styles.block}>
+                            <h3 className={styles.header}>AOI</h3>
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="aoiName"
+                                label="AOI Name"
+                                hint="Directory name of AOI which contains manifest.json and other files."
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="originalAoiFileName"
+                                label="Original AOI FileName"
+                                hint="File name for original aoi[osm file located inside aoi along with manifest json]"
+                                placeholder=""
+                            />
+                        </div>
+                        <div className={styles.block}>
+                            <h3 className={styles.header}>OAUTH Configuration</h3>
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="oauthConsumerKey"
+                                label="OAuth Consumer Key"
+                                placeholder=""
+                                hint="OSM OAuth consumer key"
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="oauthConsumerSecret"
+                                label="OAuth Consumer Secret"
+                                hint="OSM OAuth consumer secret"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="oauthApiUrl"
+                                label="OAuth Api Url"
+                                hint="OSM oauth root api endpoint"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="requestTokenUrl"
+                                label="OAuth Request Token Url"
+                                hint="OSM OAuth api endpoint for request token"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="accessTokenUrl"
+                                label="OAuth Access Token Url"
+                                hint="OSM OAuth api endpoint for access token"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="authorizationUrl"
+                                label="OAuth Authorization Url"
+                                hint="OSM OAuth api endpoint for authorization"
+                                placeholder=""
+                            />
+                        </div>
+                        <div className={styles.block}>
+                            <h3 className={styles.header}>Other</h3>
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="osmBaseUrl"
+                                label="OSM Base Url"
+                                hint="POSM's schema://IP:port that's serving osm."
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="posmDbHost"
+                                label="POSM Database Host"
+                                hind="POSM's IP which listens to psql connections."
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="posmDbName"
+                                label="POSM Database Name"
+                                hint="OSM Database Name"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="posmDbUser"
+                                label="POSM Database User"
+                                hint="OSM Database User"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="posmDbPassword"
+                                label="POSM Database Password"
+                                hint="OSM Database password"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="aoiRoot"
+                                label="AOI Root"
+                                hint="Path inside docker mapped with host's /opt/data/aoi"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="osmosisAoiRoot"
+                                label="Osmosis AOI Root"
+                                hint="Host AOI root location"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="osmosisDbHost"
+                                label="Osmosis Database Host"
+                                hint="IP of POSM itself"
+                                placeholder=""
+                            />
+                            <TextInput
+                                className={styles.input}
+                                faramElementName="overpassApiUrl"
+                                label="Overpass Api Url"
+                                hint="'Overpass api from where upstream data is pulled"
+                                placeholder=""
+                            />
+                        </div>
                     </div>
-                    <div className={styles.secondPart}>
-                        <TextInput
-                            faramElementName="osmBaseUrl"
-                            label="OSM Base Url"
-                            hint="POSM's schema://IP:port that's serving osm."
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="posmDbHost"
-                            label="POSM Database Host"
-                            hind="POSM's IP which listens to psql connections."
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="posmDbName"
-                            label="POSM Database Name"
-                            hint="OSM Database Name"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="posmDbUser"
-                            label="POSM Database User"
-                            hint="OSM Database User"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="posmDbPassword"
-                            label="POSM Database Password"
-                            hint="OSM Database password"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="aoiRoot"
-                            label="AOI Root"
-                            hint="Path inside docker mapped with host's /opt/data/aoi"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="osmosisAoiRoot"
-                            label="Osmosis AOI Root"
-                            hint="Host AOI root location"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="osmosisDbHost"
-                            label="Osmosis Database Host"
-                            hint="IP of POSM itself"
-                            placeholder=""
-                        />
-                        <TextInput
-                            faramElementName="overpassApiUrl"
-                            label="Overpass Api Url"
-                            hint="'Overpass api from where upstream data is pulled"
-                            placeholder=""
-                        />
-                    </div>
-                    <NonFieldErrors faramElement />
                     <div className={styles.actions}>
                         <PrimaryButton
                             type="submit"

@@ -5,6 +5,7 @@ const iconNames: { [key: string]: string } = {
     checkmarkCircle: 'ion-android-checkmark-circle',
     checkmarkCircleEmpty: 'ion-android-radio-button-off',
     error: 'ion-android-cancel',
+    settings: 'ion-android-settings',
     layers: 'ion-social-buffer',
 };
 

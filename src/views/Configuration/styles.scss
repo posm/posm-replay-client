@@ -1,35 +1,46 @@
 .configuration {
+    display: flex;
     position: relative;
-    overflow: auto;
+    align-items: center;
+    flex-direction: column;
+    margin: var(--spacing-large);
+    overflow-y: auto;
 
     .container {
         display: flex;
         flex-direction: column;
-        margin: auto;
-        max-width: 500px;
+        flex-grow: 1;
+        border: var(--width-separator-thin) solid var(--color-separator);
+        background-color: var(--color-foreground);
+        width: 800px;
+        overflow-y: auto;
 
-        .first-part {
+        .inputs {
             display: flex;
+            position: relative;
             flex-direction: column;
-            padding: var(--spacing-large);
+            padding: 0 var(--spacing-large) var(--spacing-large);
+            overflow-y: auto;
 
-            >* {
-                padding: var(--spacing-small) 0;
-            }
-        }
-        .second-part {
-            display: flex;
-            flex-direction: column;
-            padding: var(--spacing-large);
+            .block {
+                .input {
+                    margin: var(--spacing-medium);
+                }
 
-            >* {
-                padding: var(--spacing-small) 0;
+                .header {
+                    position: sticky;
+                    top: 0;
+                    background-color: var(--color-foreground);
+                    padding: var(--spacing-large) var(--spacing-medium) var(--spacing-medium) var(--spacing-medium);
+                    font-weight: var(--font-weight-bold);
+                }
             }
         }
 
         .actions {
             display: flex;
-            align-items: flex-end;
+            justify-content: flex-end;
+            border-top: var(--width-separator-thin) solid var(--color-separator);
             padding: var(--spacing-large);
         }
     }

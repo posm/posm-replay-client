@@ -1,5 +1,5 @@
+import React, { useState, useCallback } from 'react';
 import Loadable from 'react-loadable';
-import React from 'react';
 import { Router } from '@reach/router';
 import { _cs } from '@togglecorp/fujs';
 
@@ -12,6 +12,10 @@ import Message from '#rsu/../v2/View/Message';
 import Navbar from '#components/Navbar';
 import errorBound from '#components/errorBound';
 import helmetify from '#components/helmetify';
+import MapStyleContext, {
+    defaultMapStyles,
+    MapStyle,
+} from '#components/LayerContext';
 
 import { routeSettings } from '#constants';
 import styles from './styles.scss';
@@ -101,21 +105,33 @@ const routes = routeSettings.map(({ load, ...settings }) => {
     );
 });
 
-interface State {
-}
 interface Props {
     pending: boolean;
     className?: string;
 }
 
-class Multiplexer extends React.PureComponent<Props, State> {
-    public render() {
-        const {
-            className,
-            pending,
-        } = this.props;
+function Multiplexer(props: Props) {
+    const {
+        className,
+        pending,
+    } = props;
 
-        return (
+    const [mapStyles, setMapStyles] = useState<MapStyle[]>(defaultMapStyles);
+
+    const setMapStyle = useCallback((mapStyle: MapStyle) => {
+        setMapStyles([
+            ...mapStyles,
+            mapStyle,
+        ]);
+    }, [mapStyles, setMapStyles]);
+
+    return (
+        <MapStyleContext.Provider
+            value={{
+                mapStyles,
+                setMapStyle,
+            }}
+        >
             <div className={_cs(styles.multiplexer, className, 'multiplexer')}>
                 <Navbar className={styles.navbar} />
                 {pending ? (
@@ -128,8 +144,8 @@ class Multiplexer extends React.PureComponent<Props, State> {
                     </Router>
                 )}
             </div>
-        );
-    }
+        </MapStyleContext.Provider>
+    );
 }
 
 export default Multiplexer;
