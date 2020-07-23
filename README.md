@@ -24,8 +24,8 @@ REACT_APP_OSM_LAYER_URL="<url for local osm layer (this is optional)>"
 ```
 # Get dependencies
 mkdir ./src/vendor
-git clone https://github.com/toggle-corp/react-store ./src/vendor
-git clone https://github.com/toggle-corp/re-map ./src/vendor
+git clone https://github.com/posm/react-store ./src/vendor
+git clone https://github.com/posm/re-map ./src/vendor
 
 # Start dev server
 yarn install
