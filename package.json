@@ -157,7 +157,7 @@
         "@turf/turf": "^5.1.6",
         "core-js": "3",
         "hoist-non-react-statics": "^3.3.0",
-        "immer": "^3.2.0",
+        "immer": "^8.0.1",
         "localforage": "^1.7.3",
         "mapbox-gl": "^1.5.1",
         "memoize-one": "^5.0.5",
