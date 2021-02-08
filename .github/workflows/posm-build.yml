@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    tags:
+      - posm-build-v*
+
+jobs:
+  build:
+    name: Run build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Checkout react-store
+        uses: actions/checkout@v2
+        with:
+          repository: posm/react-store
+          ref: develop
+          path: src/vendor/react-store
+      - name: Checkout re-map
+        uses: actions/checkout@v2
+        with:
+          repository: posm/re-map
+          ref: develop
+          path: src/vendor/re-map
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - uses: actions/cache@v1
+        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Run yarn install
+        run: yarn install
+
+      - name: Generate env file
+        uses: SpicyPizza/create-envfile@v1
+        with:
+          envkey_REACT_APP_API_SERVER_URL: http://replay-tool.posm.io/api/v1
+          envkey_REACT_APP_OSM_URL: http://replay-tool.posm.io/login/openstreetmap
+          envkey_REACT_APP_OSM_LAYER_URL: http://posm.io/tiles/mm/index.json
+          file_name: .env
+
+      - name: Run yarn build (also test) and zip
+        run: |
+          NODE_OPTIONS=--max_old_space_size=4096 yarn build &&
+          cd build && zip -r ../posm-build.zip . && cd ..
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./posm-build.zip
+          asset_name: posm-build.zip
+          asset_content_type: application/zip
