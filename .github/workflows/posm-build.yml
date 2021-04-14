@@ -12,17 +12,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Checkout react-store
         uses: actions/checkout@v2
         with:
           repository: posm/react-store
-          ref: develop
+          ref: posm-replay-client-v1
           path: src/vendor/react-store
+
       - name: Checkout re-map
         uses: actions/checkout@v2
         with:
           repository: posm/re-map
-          ref: develop
+          ref: posm-replay-client-v1
           path: src/vendor/re-map
 
       - uses: actions/setup-node@v1
@@ -32,6 +34,7 @@ jobs:
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
+
       - uses: actions/cache@v1
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
